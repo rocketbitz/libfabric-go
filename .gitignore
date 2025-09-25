@@ -1,0 +1,21 @@
+# Build artifacts
+bin/
+build/
+*.out
+*.test
+*.exe
+
+# Go coverage and profiling
+*.cover
+*.prof
+
+# Editor/IDE files
+.vscode/
+.idea/
+.DS_Store
+
+# Generated files
+vendor/
+
+# Local Go build cache override
+.gocache/
