@@ -44,4 +44,4 @@
 - File issues for missing API coverage or provider-specific bugs so they can be prioritized on the roadmap.
 
 ## License
-TBD (add once decided).
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
