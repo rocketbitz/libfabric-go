@@ -3,8 +3,17 @@
 `libfabric-go` provides Go bindings for the [libfabric](https://ofiwg.github.io/libfabric/) high-performance fabric interface. The library exposes both low-level APIs that closely mirror the upstream C interface and ergonomic, idiomatic abstractions for building Go networking applications on top of libfabric providers.
 
 ## Project Status
-- Phase 0 (repository scaffolding & tooling) is in progress.
-- See [`ROADMAP.md`](ROADMAP.md) for the complete implementation plan and milestone checklist.
+- Phases 0–4 are complete (baseline scaffolding, discovery, queueing, messaging).
+- Phase 5 (memory registration & RMA) is in progress; see [`ROADMAP.md`](ROADMAP.md)
+  and [`docs/PHASE5_PLAN.md`](docs/PHASE5_PLAN.md) for current milestones.
+- Integration tests for tagged messaging and future RMA/RDM coverage are gated by
+  environment variables (e.g., `LIBFABRIC_TEST_TAGGED=1`,
+  `LIBFABRIC_TEST_DGRAM_PROVIDERS=sockets`,
+  `LIBFABRIC_TEST_RMA_PROVIDERS=<provider>`).
+- Discovery helpers now surface provider MR requirements and remote read/write
+  capabilities so domains can enforce mandatory flags automatically.
+- `fi.MRPool` provides a reusable pool of registered buffers to reduce
+  registration churn when cycling through similarly sized transfers.
 
 ## Getting Started
 1. Ensure Go 1.22+ is installed with CGO enabled.
@@ -30,6 +39,12 @@
    cd libfabric-go
    just build
    ```
+
+## Examples
+- `examples/msg_basic`: minimal MSG endpoint send/recv on the sockets provider.
+- `examples/rma_basic`: loopback RMA write/read using memory registration, address vectors, and the sockets RDM endpoint (defaults to the `sockets` provider; override via `LIBFABRIC_EXAMPLE_PROVIDER=<provider>`). The example reports a clear error when the discovered descriptor lacks `FI_REMOTE_READ`/`FI_REMOTE_WRITE` support.
+- Memory helpers now include `Domain.RegisterMemoryWithOptions`,
+  `Domain.RegisterMemoryPointer`, and `fi.MRPool` for advanced RMA flows.
 
 ## Repository Layout (planned)
 - `internal/capi`: thin CGO layer, enum/constant mappings, unsafe helpers.

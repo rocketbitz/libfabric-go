@@ -16,6 +16,7 @@ type SendRequest struct {
 	Dest    Address
 	Flags   uint64
 	Context *CompletionContext
+	Region  *MemoryRegion
 }
 
 // RecvRequest describes a message receive operation.
@@ -24,6 +25,7 @@ type RecvRequest struct {
 	Source  Address
 	Flags   uint64
 	Context *CompletionContext
+	Region  *MemoryRegion
 }
 
 func ensureContext(ctx *CompletionContext) (*CompletionContext, error) {
@@ -62,7 +64,21 @@ func (e *Endpoint) PostSend(req *SendRequest) (*CompletionContext, error) {
 	}
 
 	var cBuf unsafe.Pointer
-	if length > 0 {
+	var desc unsafe.Pointer
+	if req.Region != nil {
+		if err := ensureRegionAccess(req.Region, MRAccessLocal); err != nil {
+			ctx.Release()
+			return nil, err
+		}
+		cBuf = req.Region.buffer
+		desc = req.Region.Descriptor()
+		if length == 0 {
+			length = int(req.Region.length)
+		} else if uintptr(length) > req.Region.length {
+			ctx.Release()
+			return nil, fmt.Errorf("libfabric: send length exceeds registered region")
+		}
+	} else if length > 0 {
 		var allocErr error
 		cBuf, allocErr = ctx.ensureBuffer(uintptr(length))
 		if allocErr != nil {
@@ -71,7 +87,7 @@ func (e *Endpoint) PostSend(req *SendRequest) (*CompletionContext, error) {
 		}
 		capi.Memcpy(cBuf, unsafe.Pointer(&req.Buffer[0]), uintptr(length))
 	}
-	status := e.handle.Send(cBuf, uintptr(len(req.Buffer)), nil, capi.FIAddr(dest), ctx.Pointer())
+	status := e.handle.Send(cBuf, uintptr(length), desc, capi.FIAddr(dest), ctx.Pointer())
 	if status != nil {
 		ctx.Release()
 		return nil, status
@@ -96,9 +112,27 @@ func (e *Endpoint) PostRecv(req *RecvRequest) (*CompletionContext, error) {
 	}
 
 	var cBuf unsafe.Pointer
-	if len(req.Buffer) > 0 {
+	var desc unsafe.Pointer
+	length := len(req.Buffer)
+	if req.Region != nil {
+		if err := ensureRegionAccess(req.Region, MRAccessLocal); err != nil {
+			ctx.Release()
+			return nil, err
+		}
+		cBuf = req.Region.buffer
+		desc = req.Region.Descriptor()
+		if length == 0 {
+			length = int(req.Region.length)
+		} else if uintptr(length) > req.Region.length {
+			ctx.Release()
+			return nil, fmt.Errorf("libfabric: recv length exceeds registered region")
+		}
+		if req.Buffer != nil && len(req.Buffer) > 0 {
+			ctx.setCopyBack(req.Buffer)
+		}
+	} else if length > 0 {
 		var allocErr error
-		cBuf, allocErr = ctx.ensureBuffer(uintptr(len(req.Buffer)))
+		cBuf, allocErr = ctx.ensureBuffer(uintptr(length))
 		if allocErr != nil {
 			ctx.Release()
 			return nil, allocErr
@@ -111,7 +145,7 @@ func (e *Endpoint) PostRecv(req *RecvRequest) (*CompletionContext, error) {
 		source = AddressUnspecified
 	}
 
-	status := e.handle.Recv(cBuf, uintptr(len(req.Buffer)), nil, capi.FIAddr(source), ctx.Pointer())
+	status := e.handle.Recv(cBuf, uintptr(length), desc, capi.FIAddr(source), ctx.Pointer())
 	if status != nil {
 		ctx.Release()
 		return nil, status

@@ -9,12 +9,14 @@ package capi
 import "C"
 
 const (
-	CapMsg       = uint64(C.FI_MSG)
-	CapTagged    = uint64(C.FI_TAGGED)
-	CapRMA       = uint64(C.FI_RMA)
-	CapAtomic    = uint64(C.FI_ATOMIC)
-	CapInject    = uint64(C.FI_INJECT)
-	CapMultiRecv = uint64(C.FI_MULTI_RECV)
+	CapMsg         = uint64(C.FI_MSG)
+	CapTagged      = uint64(C.FI_TAGGED)
+	CapRMA         = uint64(C.FI_RMA)
+	CapAtomic      = uint64(C.FI_ATOMIC)
+	CapInject      = uint64(C.FI_INJECT)
+	CapMultiRecv   = uint64(C.FI_MULTI_RECV)
+	CapRemoteRead  = uint64(C.FI_REMOTE_READ)
+	CapRemoteWrite = uint64(C.FI_REMOTE_WRITE)
 )
 
 const (

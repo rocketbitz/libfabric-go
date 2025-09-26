@@ -14,6 +14,8 @@ func TestDiscover(t *testing.T) {
 		if info.Provider == "" {
 			t.Fatalf("provider name should not be empty")
 		}
+		_ = info.MRModeFlags()
+		_ = info.RequiresMRMode(MRModeLocal)
 	}
 }
 
@@ -35,6 +37,9 @@ func TestDiscoverWithEndpointType(t *testing.T) {
 		if info.Endpoint != EndpointTypeMsg {
 			t.Fatalf("expected msg endpoint, got %v", info.Endpoint)
 		}
+		_ = desc.MRModeFlags()
+		_ = desc.MRKeySize()
+		_ = desc.MRIovLimit()
 	}
 }
 

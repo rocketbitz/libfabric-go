@@ -317,6 +317,40 @@ func (e InfoEntry) InjectSize() uintptr {
 	return uintptr(e.ptr.tx_attr.inject_size)
 }
 
+func (e InfoEntry) domainAttr() *C.struct_fi_domain_attr {
+	if e.ptr == nil {
+		return nil
+	}
+	return e.ptr.domain_attr
+}
+
+// MRMode reports the domain's required memory registration mode bits.
+func (e InfoEntry) MRMode() uint64 {
+	attr := e.domainAttr()
+	if attr == nil {
+		return 0
+	}
+	return uint64(attr.mr_mode)
+}
+
+// MRKeySize reports the memory registration key size if one is required.
+func (e InfoEntry) MRKeySize() uintptr {
+	attr := e.domainAttr()
+	if attr == nil {
+		return 0
+	}
+	return uintptr(attr.mr_key_size)
+}
+
+// MRIovLimit reports the provider advertised iov limit for memory registration.
+func (e InfoEntry) MRIovLimit() uintptr {
+	attr := e.domainAttr()
+	if attr == nil {
+		return 0
+	}
+	return uintptr(attr.mr_iov_limit)
+}
+
 // RawPointer exposes the underlying C pointer for advanced use.
 func (e InfoEntry) RawPointer() *C.struct_fi_info {
 	return e.ptr

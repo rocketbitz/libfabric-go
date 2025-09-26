@@ -45,11 +45,12 @@
 - Future polish: capture provider-specific CQ/AV recipes so additional providers (e.g., EFA) can be exercised automatically in CI without bespoke setup.
 - Document ordering, error propagation, and buffer lifetime requirements for each operation; consider synchronous helpers that wrap wait sets or contexts.
 
-### Phase 5 – Memory Registration & RMA/Atomic APIs
-- Wrap memory registration (`fi_mr_reg`, `fi_mr_bind`, `fi_close`) with support for key management and access flags.
-- Implement Remote Memory Access operations (`fi_read`, `fi_write`, `fi_atomic*`) and completion semantics.
-- Provide helpers for scatter/gather lists and `iovec` interoperability.
-- Add sample benchmark or integration test demonstrating an RMA flow on the sockets provider.
+### Phase 5 – Memory Registration & RMA APIs
+- Memory registration wrappers now surface provider MR mode/key requirements, auto-enable mandatory flags (e.g. `FI_MR_LOCAL`), and support advanced options via `RegisterMemoryWithOptions` / `RegisterMemoryPointer`.
+- Scatter/gather registration is available through `RegisterMemorySegments`, backed by the new `internal/capi.MRIOVec` helper.
+- `fi.MRPool` provides reusable registered buffers to cut churn on repeated transfers.
+- RMA read/write helpers (`PostRead`/`PostWrite`, sync/context variants) and sockets-based tests exercise the full pipeline; `examples/rma_basic` demonstrates a loopback flow and reports provider capability gaps.
+- Follow-up: implement atomic verbs once a provider exposes them and expand descriptor-blob introspection when a backend requires it.
 
 ### Phase 6 – High-Level Go Abstractions (Optional Layer)
 - Design idiomatic Go interfaces that hide CGO details: e.g. `Client`, `EndpointPair`, buffer pools.
@@ -73,7 +74,7 @@
 - [x] Phase 2: Fabric/domain lifecycle wrappers with tests (passive endpoint coverage pending).
 - [x] Phase 3: Queueing primitives (AV, CQ/EQ, wait sets) validated with tests.
 - [x] Phase 4: Messaging APIs functioning with integration coverage.
-- [ ] Phase 5: Memory registration, RMA, and atomic operations implemented.
+- [x] Phase 5: Memory registration & RMA helpers implemented (atomic verbs pending provider support).
 - [ ] Phase 6: High-level Go abstractions (optional but planned) stabilized.
 - [ ] Phase 7: CI pipeline green across supported providers.
 - [ ] Phase 8: Documentation and examples published.
@@ -83,3 +84,4 @@
 - Decide how strictly to mirror the C API naming vs. Go idioms (e.g. builder patterns, contexts).
 - Evaluate feasibility of code generation for structs/enums to reduce maintenance burden.
 - Assess need for thread-safety guarantees or locking in Go wrappers beyond libfabric requirements.
+- Identify provider coverage for RMA atomic verbs and descriptor blob requirements so the Phase 5 follow-up work can be scheduled.

@@ -17,6 +17,8 @@ var (
 	ErrContextUnknown = errors.New("libfabric: completion context not found")
 	// ErrCapabilityUnsupported indicates that the provider does not support the requested capability.
 	ErrCapabilityUnsupported = errors.New("libfabric: capability not supported")
+	// ErrInsufficientAccess indicates that a memory region lacks the required access flags for the requested operation.
+	ErrInsufficientAccess = errors.New("libfabric: memory region missing required access")
 )
 
 // Errno re-exports the libfabric errno type for consumers of the fi package.
