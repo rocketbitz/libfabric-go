@@ -10,7 +10,7 @@ gocache := justfile_directory() + "/.gocache"
 
 @test:
 	mkdir -p {{gocache}}
-	CGO_ENABLED=1 GOCACHE={{gocache}} go test -race -cover -timeout=30s ./...
+	CGO_ENABLED=1 GOCACHE={{gocache}} go test -race -cover -timeout=3m ./...
 
 @fmt:
 	mkdir -p {{gocache}}

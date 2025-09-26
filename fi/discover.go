@@ -16,6 +16,32 @@ const (
 	EndpointTypeRDM    = capi.EndpointTypeRDM
 )
 
+const (
+	CapMsg         = capi.CapMsg
+	CapTagged      = capi.CapTagged
+	CapRMA         = capi.CapRMA
+	CapAtomic      = capi.CapAtomic
+	CapInject      = capi.CapInject
+	CapRemoteRead  = capi.CapRemoteRead
+	CapRemoteWrite = capi.CapRemoteWrite
+)
+
+// MRModeFlag represents provider memory-registration requirements.
+type MRModeFlag uint64
+
+const (
+	MRModeLocal      MRModeFlag = MRModeFlag(capi.MRModeLocal)
+	MRModeRaw        MRModeFlag = MRModeFlag(capi.MRModeRaw)
+	MRModeVirtAddr   MRModeFlag = MRModeFlag(capi.MRModeVirtAddr)
+	MRModeAllocated  MRModeFlag = MRModeFlag(capi.MRModeAllocated)
+	MRModeProvKey    MRModeFlag = MRModeFlag(capi.MRModeProvKey)
+	MRModeMMUNotify  MRModeFlag = MRModeFlag(capi.MRModeMMUNotify)
+	MRModeRMAEvent   MRModeFlag = MRModeFlag(capi.MRModeRMAEvent)
+	MRModeEndpoint   MRModeFlag = MRModeFlag(capi.MRModeEndpoint)
+	MRModeHMEM       MRModeFlag = MRModeFlag(capi.MRModeHMEM)
+	MRModeCollective MRModeFlag = MRModeFlag(capi.MRModeCollective)
+)
+
 // Info captures a Go-friendly snapshot of an fi_info descriptor produced during
 // provider discovery.
 type Info struct {
@@ -28,6 +54,9 @@ type Info struct {
 	ProviderVersion capi.Version
 	APIVersion      capi.Version
 	InjectSize      uintptr
+	MRMode          uint64
+	MRKeySize       uintptr
+	MRIovLimit      uintptr
 }
 
 // SupportsCap reports whether the specified capability bit is set.
@@ -43,6 +72,34 @@ func (i Info) SupportsTagged() bool {
 // SupportsMsg indicates whether standard message operations are available.
 func (i Info) SupportsMsg() bool {
 	return i.SupportsCap(capi.CapMsg)
+}
+
+// SupportsRMA reports whether the provider advertises remote memory access support.
+func (i Info) SupportsRMA() bool {
+	return i.SupportsCap(capi.CapRMA)
+}
+
+// MRModeFlags returns the raw provider MR mode bits.
+func (i Info) MRModeFlags() MRModeFlag {
+	return MRModeFlag(i.MRMode)
+}
+
+// RequiresMRMode reports whether the provider requires the specified MR mode flag.
+func (i Info) RequiresMRMode(flag MRModeFlag) bool {
+	if flag == 0 {
+		return false
+	}
+	return i.MRMode&uint64(flag) != 0
+}
+
+// SupportsRemoteRead reports whether remote read operations are available.
+func (i Info) SupportsRemoteRead() bool {
+	return i.SupportsCap(capi.CapRemoteRead)
+}
+
+// SupportsRemoteWrite reports whether remote write operations are available.
+func (i Info) SupportsRemoteWrite() bool {
+	return i.SupportsCap(capi.CapRemoteWrite)
 }
 
 // SupportsEndpointType reports whether this entry targets the specified endpoint type.
@@ -194,6 +251,9 @@ func infoFromEntry(entry capi.InfoEntry) Info {
 		ProviderVersion: entry.ProviderVersion(),
 		APIVersion:      entry.APIVersion(),
 		InjectSize:      entry.InjectSize(),
+		MRMode:          entry.MRMode(),
+		MRKeySize:       entry.MRKeySize(),
+		MRIovLimit:      entry.MRIovLimit(),
 	}
 }
 
@@ -236,6 +296,44 @@ func (d Descriptor) SupportsTagged() bool {
 // SupportsMsg reports whether standard messaging is supported.
 func (d Descriptor) SupportsMsg() bool {
 	return d.entry.Caps()&capi.CapMsg != 0
+}
+
+// SupportsRMA reports whether the descriptor advertises RMA support.
+func (d Descriptor) SupportsRMA() bool {
+	return d.entry.Caps()&capi.CapRMA != 0
+}
+
+// SupportsRemoteRead reports whether remote read operations are available.
+func (d Descriptor) SupportsRemoteRead() bool {
+	return d.entry.Caps()&capi.CapRemoteRead != 0
+}
+
+// SupportsRemoteWrite reports whether remote write operations are available.
+func (d Descriptor) SupportsRemoteWrite() bool {
+	return d.entry.Caps()&capi.CapRemoteWrite != 0
+}
+
+// MRModeFlags returns the raw provider MR mode bits.
+func (d Descriptor) MRModeFlags() MRModeFlag {
+	return MRModeFlag(d.entry.MRMode())
+}
+
+// RequiresMRMode reports whether the descriptor requires the specified MR mode flag.
+func (d Descriptor) RequiresMRMode(flag MRModeFlag) bool {
+	if flag == 0 {
+		return false
+	}
+	return d.entry.MRMode()&uint64(flag) != 0
+}
+
+// MRKeySize returns the provider-specified memory registration key size.
+func (d Descriptor) MRKeySize() uintptr {
+	return d.entry.MRKeySize()
+}
+
+// MRIovLimit returns the provider's limit for iov-based registrations.
+func (d Descriptor) MRIovLimit() uintptr {
+	return d.entry.MRIovLimit()
 }
 
 // EndpointType returns the endpoint type associated with this descriptor.
@@ -331,7 +429,42 @@ func (f *Fabric) Close() error {
 
 // Domain wraps a libfabric fid_domain handle.
 type Domain struct {
-	handle *capi.Domain
+	handle     *capi.Domain
+	mrMode     uint64
+	mrKeySize  uintptr
+	mrIovLimit uintptr
+}
+
+// MRModeFlags reports the domain's memory registration mode requirements.
+func (d *Domain) MRModeFlags() MRModeFlag {
+	if d == nil {
+		return 0
+	}
+	return MRModeFlag(d.mrMode)
+}
+
+// RequiresMRMode reports whether the domain requires the specified MR mode flag.
+func (d *Domain) RequiresMRMode(flag MRModeFlag) bool {
+	if d == nil || flag == 0 {
+		return false
+	}
+	return d.mrMode&uint64(flag) != 0
+}
+
+// MRKeySize reports the provider-specified memory registration key size, if any.
+func (d *Domain) MRKeySize() uintptr {
+	if d == nil {
+		return 0
+	}
+	return d.mrKeySize
+}
+
+// MRIovLimit reports the provider's iov registration limit when advertised.
+func (d *Domain) MRIovLimit() uintptr {
+	if d == nil {
+		return 0
+	}
+	return d.mrIovLimit
 }
 
 // Close releases the underlying domain handle.
@@ -362,7 +495,12 @@ func (d Descriptor) OpenDomain(fabric *Fabric) (*Domain, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Domain{handle: dom}, nil
+	return &Domain{
+		handle:     dom,
+		mrMode:     d.entry.MRMode(),
+		mrKeySize:  d.entry.MRKeySize(),
+		mrIovLimit: d.entry.MRIovLimit(),
+	}, nil
 }
 
 // EnsureRuntimeAtLeast wraps the capi variant for convenience.

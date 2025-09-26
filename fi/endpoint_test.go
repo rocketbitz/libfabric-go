@@ -2,6 +2,7 @@ package fi
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -23,6 +24,14 @@ func setupSocketsResourcesWithType(t *testing.T, epType EndpointType) (Descripto
 	}
 
 	desc := descs[0]
+	for _, candidate := range descs {
+		info := candidate.Info()
+		fabric := strings.ToLower(info.Fabric)
+		if fabric == "lo" || fabric == "lo0" || strings.HasPrefix(fabric, "loopback") {
+			desc = candidate
+			break
+		}
+	}
 
 	fabric, err := desc.OpenFabric()
 	if err != nil {
