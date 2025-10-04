@@ -43,6 +43,7 @@
 ## Examples
 - `examples/msg_basic`: minimal MSG endpoint send/recv on the sockets provider.
 - `examples/rma_basic`: loopback RMA write/read using memory registration, address vectors, and the sockets RDM endpoint (defaults to the `sockets` provider; override via `LIBFABRIC_EXAMPLE_PROVIDER=<provider>`). The example reports a clear error when the discovered descriptor lacks `FI_REMOTE_READ`/`FI_REMOTE_WRITE` support.
+- `examples/client_basic`: demonstrates the high-level client API sending a payload to itself using the sockets provider.
 - Memory helpers now include `Domain.RegisterMemoryWithOptions`,
   `Domain.RegisterMemoryPointer`, and `fi.MRPool` for advanced RMA flows.
 

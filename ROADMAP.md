@@ -53,9 +53,9 @@
 - Follow-up: implement atomic verbs once a provider exposes them and expand descriptor-blob introspection when a backend requires it.
 
 ### Phase 6 – High-Level Go Abstractions (Optional Layer)
-- Design idiomatic Go interfaces that hide CGO details: e.g. `Client`, `EndpointPair`, buffer pools.
-- Implement resource managers that translate contexts into Go structs with automatic cleanup (using `runtime.SetFinalizer` sparingly).
-- Offer ergonomic APIs for asynchronous operations (channels, contexts, or callback adapters) while allowing advanced users to drop down to low-level bindings.
+- **In progress.** `client` package provides discovery, lifecycle management, MR pooling, async completions, source-aware `ReceiveFrom`, handler registration, telemetry hooks (`Logger`, `StructuredLogger`, `Tracer`, `MetricHook`, `Stats`), Prometheus / OpenTelemetry metrics adapters, and MSG listener/connect helpers built atop passive endpoints.
+- Remaining follow-ups: surface higher-level helpers (retry policies, backpressure, handler orchestration) and finalise RDM/datagram peer addressing ergonomics.
+- See `docs/PHASE6_CLIENT_PLAN.md` for a detailed plan and status.
 
 ### Phase 7 – Testing, QA, and CI
 - Unit test conversion utilities and error handling with table-driven tests.
@@ -85,3 +85,4 @@
 - Evaluate feasibility of code generation for structs/enums to reduce maintenance burden.
 - Assess need for thread-safety guarantees or locking in Go wrappers beyond libfabric requirements.
 - Identify provider coverage for RMA atomic verbs and descriptor blob requirements so the Phase 5 follow-up work can be scheduled.
+- Define peer addressing patterns (RDM/datagram) and connection-management primitives for the high-level client layer.

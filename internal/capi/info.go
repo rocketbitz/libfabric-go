@@ -2,10 +2,6 @@
 
 package capi
 
-import (
-	"unsafe"
-)
-
 /*
 #cgo pkg-config: libfabric
 #include <stdlib.h>
@@ -36,6 +32,12 @@ static inline struct fi_ep_attr* go_alloc_ep_attr(void) {
 }
 */
 import "C"
+
+import "unsafe"
+
+const (
+	FlagSource = uint64(C.FI_SOURCE)
+)
 
 // Info represents an fi_info descriptor list returned by fi_getinfo. The head
 // of the list owns the underlying C allocation and must be freed with Free.

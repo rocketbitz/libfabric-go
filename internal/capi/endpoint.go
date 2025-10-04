@@ -4,6 +4,7 @@ package capi
 
 import (
 	"fmt"
+	"time"
 	"unsafe"
 )
 
@@ -34,6 +35,11 @@ type EventQueue struct {
 	ptr *C.struct_fid_eq
 }
 
+// PassiveEndpoint wraps a libfabric fid_pep handle.
+type PassiveEndpoint struct {
+	ptr *C.struct_fid_pep
+}
+
 // CQError captures details from fi_cq_readerr.
 type CQError struct {
 	Context     unsafe.Pointer
@@ -54,6 +60,7 @@ type CQEvent struct {
 	Context unsafe.Pointer
 	Tag     uint64
 	Data    uint64
+	SrcAddr uint64
 }
 
 // CQFormat mirrors enum fi_cq_format.
@@ -128,6 +135,24 @@ type EQError struct {
 	ProviderErr int
 	ErrData     unsafe.Pointer
 	ErrDataSize uint64
+}
+
+// CMEventType represents connection management events reported on event queues.
+type CMEventType uint32
+
+const (
+	CMEventConnReq   CMEventType = CMEventType(C.FI_CONNREQ)
+	CMEventConnected CMEventType = CMEventType(C.FI_CONNECTED)
+	CMEventShutdown  CMEventType = CMEventType(C.FI_SHUTDOWN)
+)
+
+// CMEvent captures fi_eq_cm_entry data.
+type CMEvent struct {
+	Event    CMEventType
+	FID      unsafe.Pointer
+	Info     InfoEntry
+	Data     []byte
+	ownsInfo bool
 }
 
 // OpenEndpoint creates an active endpoint from the supplied domain and
@@ -217,6 +242,18 @@ func (c *CompletionQueue) ReadContext() (*CQEvent, error) {
 			return nil, nil
 		}
 		return nil, ErrorFromStatus(int(ret), "fi_cq_read")
+	}
+	if c.format == C.FI_CQ_FORMAT_MSG {
+		var msg C.struct_fi_cq_msg_entry
+		var addr C.fi_addr_t
+		ret := C.fi_cq_readfrom(c.ptr, unsafe.Pointer(&msg), 1, &addr)
+		if ret > 0 {
+			return &CQEvent{Context: msg.op_context, SrcAddr: uint64(addr)}, nil
+		}
+		if ret == 0 {
+			return nil, nil
+		}
+		return nil, ErrorFromStatus(int(ret), "fi_cq_readfrom")
 	}
 	var entry C.struct_fi_cq_entry
 	ret := C.fi_cq_read(c.ptr, unsafe.Pointer(&entry), 1)
@@ -340,6 +377,172 @@ func (e *EventQueue) ReadError(flags uint64) (*EQError, error) {
 		return nil, nil
 	}
 	return nil, ErrorFromStatus(int(ret), "fi_eq_readerr")
+}
+
+// OpenPassiveEndpoint creates a passive endpoint from the supplied descriptor info.
+func OpenPassiveEndpoint(fabric *Fabric, entry InfoEntry) (*PassiveEndpoint, error) {
+	if fabric == nil || fabric.ptr == nil {
+		return nil, ErrUnavailable.WithOp("fi_passive_ep")
+	}
+	if entry.ptr == nil {
+		return nil, ErrUnavailable.WithOp("fi_passive_ep")
+	}
+	var pep *C.struct_fid_pep
+	status := C.fi_passive_ep(fabric.ptr, entry.ptr, &pep, nil)
+	if err := ErrorFromStatus(int(status), "fi_passive_ep"); err != nil {
+		return nil, err
+	}
+	return &PassiveEndpoint{ptr: pep}, nil
+}
+
+// Close releases the passive endpoint.
+func (p *PassiveEndpoint) Close() error {
+	if p == nil || p.ptr == nil {
+		return nil
+	}
+	status := C.fi_close((*C.struct_fid)(unsafe.Pointer(p.ptr)))
+	if err := ErrorFromStatus(int(status), "fi_close(pep)"); err != nil {
+		return err
+	}
+	p.ptr = nil
+	return nil
+}
+
+// BindEventQueue binds an event queue to the passive endpoint.
+func (p *PassiveEndpoint) BindEventQueue(eq *EventQueue, flags uint64) error {
+	if p == nil || p.ptr == nil || eq == nil || eq.ptr == nil {
+		return ErrUnavailable.WithOp("fi_pep_bind")
+	}
+	status := C.fi_pep_bind(p.ptr, (*C.struct_fid)(unsafe.Pointer(eq.ptr)), C.uint64_t(flags))
+	return ErrorFromStatus(int(status), "fi_pep_bind")
+}
+
+// Listen transitions the passive endpoint into a listening state.
+func (p *PassiveEndpoint) Listen() error {
+	if p == nil || p.ptr == nil {
+		return ErrUnavailable.WithOp("fi_listen")
+	}
+	status := C.fi_listen(p.ptr)
+	return ErrorFromStatus(int(status), "fi_listen")
+}
+
+// Name returns the provider-specific address associated with the passive endpoint.
+func (p *PassiveEndpoint) Name() ([]byte, error) {
+	if p == nil || p.ptr == nil {
+		return nil, ErrUnavailable.WithOp("fi_getname")
+	}
+	size := C.size_t(128)
+	for attempt := 0; attempt < 6; attempt++ {
+		buf := C.malloc(size)
+		if buf == nil {
+			return nil, fmt.Errorf("libfabric: unable to allocate name buffer")
+		}
+		length := size
+		status := C.fi_getname((*C.struct_fid)(unsafe.Pointer(p.ptr)), buf, &length)
+		if status == 0 {
+			goBytes := C.GoBytes(buf, C.int(length))
+			C.free(buf)
+			return goBytes, nil
+		}
+		C.free(buf)
+		if status == -C.int(C.FI_ENOSPC) {
+			size *= 2
+			continue
+		}
+		return nil, ErrorFromStatus(int(status), "fi_getname")
+	}
+	return nil, fmt.Errorf("libfabric: unable to retrieve passive endpoint name")
+}
+
+// OpenEndpointWithInfo opens an active endpoint using the supplied connection info entry.
+func OpenEndpointWithInfo(domain *Domain, entry InfoEntry) (*Endpoint, error) {
+	if domain == nil || domain.ptr == nil {
+		return nil, ErrUnavailable.WithOp("fi_endpoint")
+	}
+	if entry.ptr == nil {
+		return nil, ErrUnavailable.WithOp("fi_endpoint")
+	}
+	var ep *C.struct_fid_ep
+	status := C.fi_endpoint(domain.ptr, entry.ptr, &ep, nil)
+	if err := ErrorFromStatus(int(status), "fi_endpoint"); err != nil {
+		return nil, err
+	}
+	return &Endpoint{ptr: ep}, nil
+}
+
+// Accept acknowledges a pending connection request on the endpoint.
+func (e *Endpoint) Accept(param unsafe.Pointer, length uintptr) error {
+	if e == nil || e.ptr == nil {
+		return ErrUnavailable.WithOp("fi_accept")
+	}
+	status := C.fi_accept(e.ptr, param, C.size_t(length))
+	return ErrorFromStatus(int(status), "fi_accept")
+}
+
+// Connect initiates a connection request from the endpoint.
+func (e *Endpoint) Connect(param unsafe.Pointer, length uintptr) error {
+	if e == nil || e.ptr == nil {
+		return ErrUnavailable.WithOp("fi_connect")
+	}
+	status := C.fi_connect(e.ptr, nil, param, C.size_t(length))
+	return ErrorFromStatus(int(status), "fi_connect")
+}
+
+// Pointer exposes the underlying fid_ep pointer.
+func (e *Endpoint) Pointer() unsafe.Pointer {
+	if e == nil || e.ptr == nil {
+		return nil
+	}
+	return unsafe.Pointer(e.ptr)
+}
+
+// FreeInfo releases a fi_info entry.
+func FreeInfo(entry InfoEntry) {
+	if entry.ptr == nil {
+		return
+	}
+	C.fi_freeinfo(entry.ptr)
+}
+
+// FreeInfo releases the fi_info associated with the CM event if owned.
+func (e *CMEvent) FreeInfo() {
+	if e == nil || !e.ownsInfo {
+		return
+	}
+	FreeInfo(e.Info)
+	e.ownsInfo = false
+}
+
+// ReadCM retrieves the next connection management event.
+func (e *EventQueue) ReadCM(timeout time.Duration) (*CMEvent, error) {
+	if e == nil || e.ptr == nil {
+		return nil, ErrUnavailable.WithOp("fi_eq_sread")
+	}
+	var code C.uint32_t
+	var entry C.struct_fi_eq_cm_entry
+	timeoutMs := C.int(-1)
+	if timeout >= 0 {
+		timeoutMs = C.int(timeout / time.Millisecond)
+	}
+	ret := C.fi_eq_sread(e.ptr, &code, unsafe.Pointer(&entry), C.size_t(unsafe.Sizeof(entry)), timeoutMs, 0)
+	if ret > 0 {
+		cm := &CMEvent{
+			Event:    CMEventType(code),
+			FID:      unsafe.Pointer(entry.fid),
+			Info:     InfoEntry{ptr: entry.info},
+			ownsInfo: entry.info != nil,
+		}
+		baseSize := int(C.size_t(unsafe.Sizeof(entry)))
+		if dataLen := int(ret) - baseSize; dataLen > 0 {
+			start := unsafe.Pointer(uintptr(unsafe.Pointer(&entry)) + uintptr(baseSize))
+			cm.Data = C.GoBytes(start, C.int(dataLen))
+		}
+		return cm, nil
+	}
+	if ret == 0 {
+		return nil, nil
+	}
+	return nil, ErrorFromStatus(int(ret), "fi_eq_sread")
 }
 
 // BindCompletionQueue binds the endpoint to a completion queue with the supplied flags.
