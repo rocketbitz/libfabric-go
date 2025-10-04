@@ -1,0 +1,36 @@
+version: 2.1
+
+jobs:
+  go-test:
+    docker:
+      - image: cimg/go:1.23
+    environment:
+      GO111MODULE: "on"
+    steps:
+      - checkout
+      - run:
+          name: Install libfabric dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y libfabric-dev
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
+            - go-mod-v1-
+      - run:
+          name: Download modules
+          command: go mod download
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - /home/circleci/go/pkg/mod
+            - /home/circleci/.cache/go-build
+      - run:
+          name: Run unit tests
+          command: go test ./...
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - go-test

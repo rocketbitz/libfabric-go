@@ -7,6 +7,14 @@ import "fmt"
 /*
 #cgo pkg-config: libfabric
 #include <rdma/fi_errno.h>
+
+#ifndef FI_EPROTO
+#define FI_EPROTO FI_EOTHER
+#endif
+
+#ifndef FI_ENOMR
+#define FI_ENOMR FI_EOTHER
+#endif
 */
 import "C"
 
