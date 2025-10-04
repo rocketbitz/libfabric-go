@@ -129,13 +129,6 @@ func (e *ConnectionEvent) OpenEndpoint(domain *Domain) (*Endpoint, error) {
 	return domain.OpenEndpointWithInfo(e.cm.Info)
 }
 
-func (e *ConnectionEvent) infoEntry() capi.InfoEntry {
-	if e == nil || e.cm == nil {
-		return capi.InfoEntry{}
-	}
-	return e.cm.Info
-}
-
 // Free releases the fi_info associated with the event.
 func (e *ConnectionEvent) Free() {
 	if e == nil || e.cm == nil {

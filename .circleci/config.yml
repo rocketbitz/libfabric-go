@@ -1,36 +1,129 @@
 version: 2.1
 
-jobs:
-  go-test:
+executors:
+  go-libfabric:
     docker:
-      - image: cimg/go:1.23
+      - image: cimg/go:1.24
     environment:
       GO111MODULE: "on"
+
+commands:
+  install_libfabric:
     steps:
-      - checkout
       - run:
           name: Install libfabric dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y libfabric-dev
+            sudo apt-get install -y --no-install-recommends libfabric-dev
+  restore_go_cache:
+    steps:
       - restore_cache:
           keys:
             - go-mod-v1-{{ checksum "go.sum" }}
             - go-mod-v1-
-      - run:
-          name: Download modules
-          command: go mod download
+  save_go_cache:
+    steps:
       - save_cache:
           key: go-mod-v1-{{ checksum "go.sum" }}
           paths:
             - /home/circleci/go/pkg/mod
             - /home/circleci/.cache/go-build
+
+jobs:
+  go-lint:
+    executor: go-libfabric
+    steps:
+      - checkout
+      - install_libfabric
+      - restore_go_cache
       - run:
-          name: Run unit tests
-          command: go test ./...
+          name: Download modules
+          command: go mod download
+      - save_go_cache
+      - run:
+          name: gofmt check
+          command: |
+            CHANGED=$(gofmt -l $(find . -name '*.go' -not -path './vendor/*'))
+            if [ -n "${CHANGED}" ]; then
+              echo "The following files need gofmt:" >&2
+              echo "${CHANGED}" >&2
+              exit 1
+            fi
+      - run:
+          name: Install golangci-lint
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.4.0
+      - run:
+          name: Run golangci-lint
+          command: |
+            golangci-lint run --timeout=5m
+
+  go-test:
+    executor: go-libfabric
+    steps:
+      - checkout
+      - install_libfabric
+      - restore_go_cache
+      - run:
+          name: Download modules
+          command: go mod download
+      - save_go_cache
+      - run:
+          name: Run unit tests with race detector
+          command: |
+            go test -race ./... -coverprofile=coverage.out
+      - store_artifacts:
+          path: coverage.out
+          destination: coverage.out
+
+  go-bench:
+    executor: go-libfabric
+    steps:
+      - checkout
+      - install_libfabric
+      - restore_go_cache
+      - run:
+          name: Download modules
+          command: go mod download
+      - save_go_cache
+      - run:
+          name: Run benchmarks
+          command: |
+            go test ./... -run=^$ -bench=. -benchtime=1x -benchmem | tee benchmark.txt
+      - store_artifacts:
+          path: benchmark.txt
+          destination: benchmark.txt
+
+  go-integration:
+    executor: go-libfabric
+    steps:
+      - checkout
+      - install_libfabric
+      - restore_go_cache
+      - run:
+          name: Download modules
+          command: go mod download
+      - save_go_cache
+      - run:
+          name: Run example integration tests (opt-in)
+          command: |
+            if [ -n "${LIBFABRIC_TEST_EXAMPLES}" ]; then
+              go test -timeout=5m -tags=integration ./integration/...
+            else
+              echo "LIBFABRIC_TEST_EXAMPLES not set; skipping integration tests"
+            fi
 
 workflows:
   version: 2
-  test:
+  ci:
     jobs:
-      - go-test
+      - go-lint
+      - go-test:
+          requires:
+            - go-lint
+      - go-bench:
+          requires:
+            - go-test
+      - go-integration:
+          requires:
+            - go-test

@@ -49,67 +49,67 @@ func Connect(cfg Config) (*Client, error) {
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
-		fabric.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open domain: %w", err)
 	}
 
 	cq, err := domain.OpenCompletionQueue(nil)
 	if err != nil {
-		domain.Close()
-		fabric.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open completion queue: %w", err)
 	}
 
 	eq, err := fabric.OpenEventQueue(nil)
 	if err != nil {
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open event queue: %w", err)
 	}
 
 	endpoint, err := desc.OpenEndpoint(domain)
 	if err != nil {
-		eq.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = eq.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open endpoint: %w", err)
 	}
 
 	if err := endpoint.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
-		endpoint.Close()
-		eq.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = eq.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("bind completion queue: %w", err)
 	}
 
 	if err := endpoint.BindEventQueue(eq, 0); err != nil {
-		endpoint.Close()
-		eq.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = eq.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("bind event queue: %w", err)
 	}
 
 	if err := endpoint.Enable(); err != nil {
-		endpoint.Close()
-		eq.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = eq.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("enable endpoint: %w", err)
 	}
 
 	if err := endpoint.Connect(nil); err != nil {
-		endpoint.Close()
-		eq.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = eq.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("connect: %w", err)
 	}
 
