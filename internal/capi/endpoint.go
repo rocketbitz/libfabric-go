@@ -11,11 +11,17 @@ import (
 /*
 #cgo pkg-config: libfabric
 #include <stdlib.h>
+#include <stdint.h>
 #include <rdma/fabric.h>
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
 #include <rdma/fi_endpoint.h>
 #include <rdma/fi_eq.h>
+
+static inline uint64_t go_cq_err_src_addr(struct fi_cq_err_entry *entry) {
+	(void)entry;
+	return 0;
+}
 */
 import "C"
 
@@ -286,7 +292,7 @@ func (c *CompletionQueue) ReadError(flags uint64) (*CQError, error) {
 			ProviderErr: int(entry.prov_errno),
 			ErrData:     entry.err_data,
 			ErrDataSize: uint64(entry.err_data_size),
-			SrcAddr:     uint64(entry.src_addr),
+			SrcAddr:     uint64(C.go_cq_err_src_addr(&entry)),
 		}, nil
 	}
 	if ret == 0 {
