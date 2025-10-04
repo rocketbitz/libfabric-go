@@ -36,6 +36,7 @@ type CompletionEvent struct {
 	Context unsafe.Pointer
 	Tag     uint64
 	Data    uint64
+	Source  Address
 }
 
 // HasTag reports whether the completion carried tag information (tagged CQ format).
@@ -184,7 +185,7 @@ func (c *CompletionQueue) ReadContext() (*CompletionEvent, error) {
 	if event == nil {
 		return nil, ErrNoCompletion
 	}
-	return &CompletionEvent{Context: event.Context, Tag: event.Tag, Data: event.Data}, nil
+	return &CompletionEvent{Context: event.Context, Tag: event.Tag, Data: event.Data, Source: Address(event.SrcAddr)}, nil
 }
 
 // ReadError returns the next completion queue error entry if present.
@@ -356,6 +357,23 @@ func (d Descriptor) OpenEndpoint(domain *Domain) (*Endpoint, error) {
 	}, nil
 }
 
+// OpenEndpointWithInfo opens an endpoint using connection-management info.
+func (d *Domain) OpenEndpointWithInfo(entry capi.InfoEntry) (*Endpoint, error) {
+	if d == nil || d.handle == nil {
+		return nil, ErrInvalidHandle{"domain"}
+	}
+	ep, err := capi.OpenEndpointWithInfo(d.handle, entry)
+	if err != nil {
+		return nil, err
+	}
+	info := infoFromEntry(entry)
+	return &Endpoint{
+		handle:         ep,
+		injectLimit:    info.InjectSize,
+		supportsTagged: info.SupportsTagged(),
+	}, nil
+}
+
 // BindCompletionQueue binds the endpoint to a completion queue with flags.
 func (e *Endpoint) BindCompletionQueue(cq *CompletionQueue, flags BindFlag) error {
 	if e == nil || e.handle == nil {
@@ -387,6 +405,34 @@ func (e *Endpoint) BindAddressVector(av *AddressVector, flags BindFlag) error {
 		return ErrInvalidHandle{"address vector"}
 	}
 	return e.handle.BindAddressVector(av.handle, uint64(flags))
+}
+
+// Accept acknowledges a pending connection request.
+func (e *Endpoint) Accept(params []byte) error {
+	if e == nil || e.handle == nil {
+		return ErrInvalidHandle{"endpoint"}
+	}
+	var ptr unsafe.Pointer
+	var length uintptr
+	if len(params) > 0 {
+		ptr = unsafe.Pointer(&params[0])
+		length = uintptr(len(params))
+	}
+	return e.handle.Accept(ptr, length)
+}
+
+// Connect initiates a connection request for the endpoint.
+func (e *Endpoint) Connect(params []byte) error {
+	if e == nil || e.handle == nil {
+		return ErrInvalidHandle{"endpoint"}
+	}
+	var ptr unsafe.Pointer
+	var length uintptr
+	if len(params) > 0 {
+		ptr = unsafe.Pointer(&params[0])
+		length = uintptr(len(params))
+	}
+	return e.handle.Connect(ptr, length)
 }
 
 // Enable transitions the endpoint into an active state.
@@ -435,6 +481,14 @@ func (e *Endpoint) SupportsTagged() bool {
 		return false
 	}
 	return e.supportsTagged
+}
+
+// Pointer exposes the underlying fid_ep pointer.
+func (e *Endpoint) Pointer() unsafe.Pointer {
+	if e == nil || e.handle == nil {
+		return nil
+	}
+	return e.handle.Pointer()
 }
 
 func translateErr(err error, sentinel error) error {

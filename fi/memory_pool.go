@@ -14,6 +14,14 @@ type MRPool struct {
 	closed atomic.Bool
 }
 
+// Size returns the configured segment size for the pool.
+func (p *MRPool) Size() int {
+	if p == nil {
+		return 0
+	}
+	return p.size
+}
+
 // NewMRPool constructs a pool that dispenses memory regions registered with the supplied domain.
 // The pool provisions regions lazily up to the specified capacity.
 func NewMRPool(domain *Domain, size int, access MRAccessFlag, capacity int) (*MRPool, error) {

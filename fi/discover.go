@@ -17,6 +17,10 @@ const (
 )
 
 const (
+	FlagSource = capi.FlagSource
+)
+
+const (
 	CapMsg         = capi.CapMsg
 	CapTagged      = capi.CapTagged
 	CapRMA         = capi.CapRMA
