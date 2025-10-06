@@ -21,21 +21,34 @@ import "C"
 type MRAccess uint64
 
 const (
-	MRAccessLocal       MRAccess = MRAccess(C.FI_MR_LOCAL)
-	MRAccessRemoteRead  MRAccess = MRAccess(C.FI_REMOTE_READ)
+	// MRAccessLocal enables local CPU access to the registered memory.
+	MRAccessLocal MRAccess = MRAccess(C.FI_MR_LOCAL)
+	// MRAccessRemoteRead enables remote read access.
+	MRAccessRemoteRead MRAccess = MRAccess(C.FI_REMOTE_READ)
+	// MRAccessRemoteWrite enables remote write access.
 	MRAccessRemoteWrite MRAccess = MRAccess(C.FI_REMOTE_WRITE)
 )
 
 const (
-	MRModeLocal      = uint64(C.FI_MR_LOCAL)
-	MRModeRaw        = uint64(C.FI_MR_RAW)
-	MRModeVirtAddr   = uint64(C.FI_MR_VIRT_ADDR)
-	MRModeAllocated  = uint64(C.FI_MR_ALLOCATED)
-	MRModeProvKey    = uint64(C.FI_MR_PROV_KEY)
-	MRModeMMUNotify  = uint64(C.FI_MR_MMU_NOTIFY)
-	MRModeRMAEvent   = uint64(C.FI_MR_RMA_EVENT)
-	MRModeEndpoint   = uint64(C.FI_MR_ENDPOINT)
-	MRModeHMEM       = uint64(C.FI_MR_HMEM)
+	// MRModeLocal indicates local registration semantics are required.
+	MRModeLocal = uint64(C.FI_MR_LOCAL)
+	// MRModeRaw indicates raw memory registration semantics.
+	MRModeRaw = uint64(C.FI_MR_RAW)
+	// MRModeVirtAddr indicates virtual address registration semantics.
+	MRModeVirtAddr = uint64(C.FI_MR_VIRT_ADDR)
+	// MRModeAllocated indicates provider-allocated registrations.
+	MRModeAllocated = uint64(C.FI_MR_ALLOCATED)
+	// MRModeProvKey indicates provider-generated keys are required.
+	MRModeProvKey = uint64(C.FI_MR_PROV_KEY)
+	// MRModeMMUNotify indicates memory mapping changes must be reported.
+	MRModeMMUNotify = uint64(C.FI_MR_MMU_NOTIFY)
+	// MRModeRMAEvent indicates RMA operations must produce events.
+	MRModeRMAEvent = uint64(C.FI_MR_RMA_EVENT)
+	// MRModeEndpoint indicates registrations are endpoint-specific.
+	MRModeEndpoint = uint64(C.FI_MR_ENDPOINT)
+	// MRModeHMEM indicates heterogeneous memory registration semantics.
+	MRModeHMEM = uint64(C.FI_MR_HMEM)
+	// MRModeCollective indicates collective registration semantics.
 	MRModeCollective = uint64(C.FI_MR_COLLECTIVE)
 )
 
@@ -120,6 +133,7 @@ func (m *MemoryRegion) Key() uint64 {
 	return uint64(C.fi_mr_key(m.ptr))
 }
 
+// Descriptor returns the provider-specific descriptor pointer for the region.
 func (m *MemoryRegion) Descriptor() unsafe.Pointer {
 	if m == nil || m.ptr == nil {
 		return nil
@@ -127,6 +141,7 @@ func (m *MemoryRegion) Descriptor() unsafe.Pointer {
 	return C.fi_mr_desc(m.ptr)
 }
 
+// DescriptorSize reports the size of the provider-specific descriptor.
 func (m *MemoryRegion) DescriptorSize() uintptr {
 	if m == nil || m.ptr == nil {
 		return 0

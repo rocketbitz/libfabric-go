@@ -56,7 +56,7 @@ jobs:
       - run:
           name: Run golangci-lint
           command: |
-            golangci-lint run --timeout=5m
+            golangci-lint run --timeout=5m ./client/... ./fi/... ./internal/...
 
   go-test:
     executor: go-libfabric

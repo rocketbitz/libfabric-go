@@ -127,7 +127,7 @@ func (e *Endpoint) PostRecv(req *RecvRequest) (*CompletionContext, error) {
 			ctx.Release()
 			return nil, fmt.Errorf("libfabric: recv length exceeds registered region")
 		}
-		if req.Buffer != nil && len(req.Buffer) > 0 {
+		if len(req.Buffer) > 0 {
 			ctx.setCopyBack(req.Buffer)
 		}
 	} else if length > 0 {

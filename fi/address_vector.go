@@ -12,15 +12,19 @@ import (
 type AVType = capi.AVType
 
 const (
+	// AVTypeUnspec requests the provider's default address vector implementation.
 	AVTypeUnspec = capi.AVTypeUnspec
-	AVTypeMap    = capi.AVTypeMap
-	AVTypeTable  = capi.AVTypeTable
+	// AVTypeMap selects a map-based address vector implementation.
+	AVTypeMap = capi.AVTypeMap
+	// AVTypeTable selects a table-based address vector implementation.
+	AVTypeTable = capi.AVTypeTable
 )
 
 // Address represents an fi_addr_t assigned by the provider.
 type Address = capi.FIAddr
 
 const (
+	// AddressUnspecified represents an invalid or unspecified remote address.
 	AddressUnspecified = Address(capi.FIAddrUnspec)
 )
 

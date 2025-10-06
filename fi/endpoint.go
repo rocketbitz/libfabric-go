@@ -127,31 +127,45 @@ type Endpoint struct {
 type CQFormat = capi.CQFormat
 
 const (
-	CQFormatUnspec  = capi.CQFormatUnspec
+	// CQFormatUnspec allows the provider to choose the completion format.
+	CQFormatUnspec = capi.CQFormatUnspec
+	// CQFormatContext reports completions containing context pointers only.
 	CQFormatContext = capi.CQFormatContext
-	CQFormatMsg     = capi.CQFormatMsg
-	CQFormatData    = capi.CQFormatData
-	CQFormatTagged  = capi.CQFormatTagged
+	// CQFormatMsg reports message completions with length information.
+	CQFormatMsg = capi.CQFormatMsg
+	// CQFormatData reports data completions with provider-specific data.
+	CQFormatData = capi.CQFormatData
+	// CQFormatTagged reports completions containing tag metadata.
+	CQFormatTagged = capi.CQFormatTagged
 )
 
 // WaitObj mirrors capi.WaitObj.
 type WaitObj = capi.WaitObj
 
 const (
-	WaitNone      = capi.WaitNone
-	WaitUnspec    = capi.WaitUnspec
-	WaitObjSet    = capi.WaitObjSet
-	WaitFD        = capi.WaitFD
+	// WaitNone disables waiting primitives on the queue.
+	WaitNone = capi.WaitNone
+	// WaitUnspec lets the provider choose the wait object type.
+	WaitUnspec = capi.WaitUnspec
+	// WaitObjSet delivers a wait set-compatible queue.
+	WaitObjSet = capi.WaitObjSet
+	// WaitFD exposes a file descriptor for polling.
+	WaitFD = capi.WaitFD
+	// WaitMutexCond uses a mutex/condition pair for waiting.
 	WaitMutexCond = capi.WaitMutexCond
-	WaitYield     = capi.WaitYield
-	WaitPollFD    = capi.WaitPollFD
+	// WaitYield yields the processor during waits.
+	WaitYield = capi.WaitYield
+	// WaitPollFD exposes a pollable file descriptor.
+	WaitPollFD = capi.WaitPollFD
 )
 
 // CQWaitCond mirrors capi.CQWaitCond.
 type CQWaitCond = capi.CQWaitCond
 
 const (
-	CQCondNone      = capi.CQCondNone
+	// CQCondNone applies no wait condition.
+	CQCondNone = capi.CQCondNone
+	// CQCondThreshold waits until a completion threshold is reached.
 	CQCondThreshold = capi.CQCondThreshold
 )
 
@@ -159,7 +173,9 @@ const (
 type BindFlag uint64
 
 const (
+	// BindSend binds send operations to the target resource.
 	BindSend BindFlag = BindFlag(capi.BindSend)
+	// BindRecv binds receive operations to the target resource.
 	BindRecv BindFlag = BindFlag(capi.BindRecv)
 )
 

@@ -72,7 +72,7 @@ func Listen(cfg ListenerConfig) (*Listener, error) {
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
-		fabric.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open domain: %w", err)
 	}
 
@@ -236,16 +236,16 @@ func (l *Listener) handleConnReq(ctx context.Context, evt *fi.ConnectionEvent) (
 	}
 
 	if err := endpoint.Accept(evt.Data()); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("accept: %w", err)
 	}
 
 	if err := waitForConnected(ctx, clientEQ); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, err
 	}
 

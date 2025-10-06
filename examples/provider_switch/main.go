@@ -1,3 +1,4 @@
+// Package main demonstrates switching libfabric providers at runtime.
 package main
 
 import (
@@ -55,25 +56,25 @@ func runMSGExample(desc fi.Descriptor) error {
 	if err != nil {
 		return fmt.Errorf("open fabric: %w", err)
 	}
-	defer fabric.Close()
+	defer func() { _ = fabric.Close() }()
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
 		return fmt.Errorf("open domain: %w", err)
 	}
-	defer domain.Close()
+	defer func() { _ = domain.Close() }()
 
 	cq, err := domain.OpenCompletionQueue(nil)
 	if err != nil {
 		return fmt.Errorf("open completion queue: %w", err)
 	}
-	defer cq.Close()
+	defer func() { _ = cq.Close() }()
 
 	ep, err := desc.OpenEndpoint(domain)
 	if err != nil {
 		return fmt.Errorf("open endpoint: %w", err)
 	}
-	defer ep.Close()
+	defer func() { _ = ep.Close() }()
 
 	if err := ep.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
 		return fmt.Errorf("bind completion queue: %w", err)
@@ -104,19 +105,19 @@ func runRDMExample(desc fi.Descriptor) error {
 	if err != nil {
 		return fmt.Errorf("open fabric: %w", err)
 	}
-	defer fabric.Close()
+	defer func() { _ = fabric.Close() }()
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
 		return fmt.Errorf("open domain: %w", err)
 	}
-	defer domain.Close()
+	defer func() { _ = domain.Close() }()
 
 	av, err := domain.OpenAddressVector(&fi.AddressVectorAttr{Type: fi.AVTypeMap})
 	if err != nil {
 		return fmt.Errorf("open address vector: %w", err)
 	}
-	defer av.Close()
+	defer func() { _ = av.Close() }()
 
 	type endpointResources struct {
 		ep *fi.Endpoint
@@ -131,23 +132,23 @@ func runRDMExample(desc fi.Descriptor) error {
 
 		ep, err := desc.OpenEndpoint(domain)
 		if err != nil {
-			cq.Close()
+			_ = cq.Close()
 			return nil, fmt.Errorf("open endpoint: %w", err)
 		}
 
 		if err := ep.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
-			ep.Close()
-			cq.Close()
+			_ = ep.Close()
+			_ = cq.Close()
 			return nil, fmt.Errorf("bind completion queue: %w", err)
 		}
 		if err := ep.BindAddressVector(av, 0); err != nil {
-			ep.Close()
-			cq.Close()
+			_ = ep.Close()
+			_ = cq.Close()
 			return nil, fmt.Errorf("bind address vector: %w", err)
 		}
 		if err := ep.Enable(); err != nil {
-			ep.Close()
-			cq.Close()
+			_ = ep.Close()
+			_ = cq.Close()
 			if errors.Is(err, fi.ErrCapabilityUnsupported) {
 				return nil, fmt.Errorf("endpoint enable unsupported: %w", err)
 			}

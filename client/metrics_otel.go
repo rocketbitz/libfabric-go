@@ -86,31 +86,38 @@ func NewOTelMetrics(opts OTelMetricsOptions) (*OTelMetrics, error) {
 	}, nil
 }
 
+// DispatcherStarted records that the dispatcher loop has started executing.
 func (o *OTelMetrics) DispatcherStarted(attrs map[string]string) {
 	o.dispatcherStarted.Add(context.Background(), 1, metric.WithAttributes(otelAttrs(attrs)...))
 }
 
+// DispatcherStopped records that the dispatcher loop has exited.
 func (o *OTelMetrics) DispatcherStopped(attrs map[string]string) {
 	o.dispatcherStopped.Add(context.Background(), 1, metric.WithAttributes(otelAttrs(attrs)...))
 }
 
+// DispatcherCQError counts completion queue errors observed by the dispatcher.
 func (o *OTelMetrics) DispatcherCQError(kind string, _ error, attrs map[string]string) {
 	attributes := append(otelAttrs(attrs), attribute.String(labelKind, kind))
 	o.dispatcherCQError.Add(context.Background(), 1, metric.WithAttributes(attributes...))
 }
 
+// SendCompleted records a successful send completion.
 func (o *OTelMetrics) SendCompleted(attrs map[string]string) {
 	o.sendCompleted.Add(context.Background(), 1, metric.WithAttributes(otelAttrsWithOperation(attrs)...))
 }
 
+// SendFailed records a failed send completion.
 func (o *OTelMetrics) SendFailed(_ error, attrs map[string]string) {
 	o.sendFailed.Add(context.Background(), 1, metric.WithAttributes(otelAttrsWithOperation(attrs)...))
 }
 
+// ReceiveCompleted records a successful receive completion.
 func (o *OTelMetrics) ReceiveCompleted(attrs map[string]string) {
 	o.receiveCompleted.Add(context.Background(), 1, metric.WithAttributes(otelAttrsWithOperation(attrs)...))
 }
 
+// ReceiveFailed records a failed receive completion.
 func (o *OTelMetrics) ReceiveFailed(_ error, attrs map[string]string) {
 	o.receiveFailed.Add(context.Background(), 1, metric.WithAttributes(otelAttrsWithOperation(attrs)...))
 }

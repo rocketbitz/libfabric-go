@@ -66,9 +66,12 @@ func (p *PassiveEndpoint) Name() ([]byte, error) {
 type ConnectionEventType = capi.CMEventType
 
 const (
-	ConnectionEventConnReq   = ConnectionEventType(capi.CMEventConnReq)
+	// ConnectionEventConnReq indicates a new connection request is pending.
+	ConnectionEventConnReq = ConnectionEventType(capi.CMEventConnReq)
+	// ConnectionEventConnected indicates a connection has been established.
 	ConnectionEventConnected = ConnectionEventType(capi.CMEventConnected)
-	ConnectionEventShutdown  = ConnectionEventType(capi.CMEventShutdown)
+	// ConnectionEventShutdown indicates the connection has been shut down.
+	ConnectionEventShutdown = ConnectionEventType(capi.CMEventShutdown)
 )
 
 // ConnectionEvent represents a connection-management event.

@@ -77,10 +77,10 @@ func BuildVersion() Version {
 
 // EnsureRuntimeAtLeast validates that the runtime libfabric is at least the
 // provided version.
-func EnsureRuntimeAtLeast(min Version) error {
+func EnsureRuntimeAtLeast(minimum Version) error {
 	runtime := RuntimeVersion()
-	if runtime.Compare(min) < 0 {
-		return fmt.Errorf("libfabric runtime %s is older than required %s", runtime, min)
+	if runtime.Compare(minimum) < 0 {
+		return fmt.Errorf("libfabric runtime %s is older than required %s", runtime, minimum)
 	}
 	return nil
 }

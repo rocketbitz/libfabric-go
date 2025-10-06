@@ -79,7 +79,9 @@ type errorHolder struct {
 }
 
 const (
+	// OperationSend identifies send operations tracked by OperationKind.
 	OperationSend OperationKind = iota
+	// OperationReceive identifies receive operations tracked by OperationKind.
 	OperationReceive
 )
 

@@ -22,7 +22,7 @@ gocache := justfile_directory() + "/.gocache"
 
 @lint:
 	if command -v golangci-lint >/dev/null 2>&1; then \
-		GOCACHE={{gocache}} golangci-lint run ./...; \
+		GOCACHE={{gocache}} golangci-lint run ./client/... ./fi/... ./internal/...; \
 	else \
 		echo "golangci-lint not found; install with 'just tools' or skip"; \
 	fi

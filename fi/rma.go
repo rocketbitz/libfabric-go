@@ -52,7 +52,7 @@ func (e *Endpoint) PostRead(req *RMARequest) (*CompletionContext, error) {
 			ctx.Release()
 			return nil, fmt.Errorf("libfabric: read length exceeds registered region")
 		}
-		if req.Buffer != nil && len(req.Buffer) > 0 {
+		if len(req.Buffer) > 0 {
 			ctx.setCopyBack(req.Buffer)
 		}
 	} else if length > 0 {
@@ -150,7 +150,7 @@ func (e *Endpoint) WriteSync(req *RMARequest, cq *CompletionQueue, timeout time.
 	return waitForContext(cq, ctx, timeout)
 }
 
-// Context-aware variants for cancellation.
+// ReadSyncContext posts a read and waits for completion with context cancellation support.
 func (e *Endpoint) ReadSyncContext(ctx context.Context, req *RMARequest, cq *CompletionQueue, timeout time.Duration) error {
 	if cq == nil {
 		return errors.New("libfabric: completion queue required")
@@ -162,6 +162,7 @@ func (e *Endpoint) ReadSyncContext(ctx context.Context, req *RMARequest, cq *Com
 	return waitForContextWithContext(ctx, cq, completion, timeout)
 }
 
+// WriteSyncContext posts a write and waits for completion with context cancellation support.
 func (e *Endpoint) WriteSyncContext(ctx context.Context, req *RMARequest, cq *CompletionQueue, timeout time.Duration) error {
 	if cq == nil {
 		return errors.New("libfabric: completion queue required")

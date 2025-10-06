@@ -116,11 +116,11 @@ func Connect(cfg Config) (*Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
 	defer cancel()
 	if err := waitForConnected(ctx, eq); err != nil {
-		endpoint.Close()
-		eq.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = eq.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, err
 	}
 

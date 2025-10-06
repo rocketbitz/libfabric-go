@@ -10,23 +10,35 @@ import (
 type EndpointType = capi.EndpointType
 
 const (
+	// EndpointTypeUnspec allows the provider to select the endpoint type.
 	EndpointTypeUnspec = capi.EndpointTypeUnspec
-	EndpointTypeMsg    = capi.EndpointTypeMsg
-	EndpointTypeDgram  = capi.EndpointTypeDgram
-	EndpointTypeRDM    = capi.EndpointTypeRDM
+	// EndpointTypeMsg targets message-based endpoints.
+	EndpointTypeMsg = capi.EndpointTypeMsg
+	// EndpointTypeDgram targets unreliable datagram endpoints.
+	EndpointTypeDgram = capi.EndpointTypeDgram
+	// EndpointTypeRDM targets reliable datagram endpoints.
+	EndpointTypeRDM = capi.EndpointTypeRDM
 )
 
 const (
+	// FlagSource requests source address information during discovery.
 	FlagSource = capi.FlagSource
 )
 
 const (
-	CapMsg         = capi.CapMsg
-	CapTagged      = capi.CapTagged
-	CapRMA         = capi.CapRMA
-	CapAtomic      = capi.CapAtomic
-	CapInject      = capi.CapInject
-	CapRemoteRead  = capi.CapRemoteRead
+	// CapMsg indicates provider support for message operations.
+	CapMsg = capi.CapMsg
+	// CapTagged indicates provider support for tagged message operations.
+	CapTagged = capi.CapTagged
+	// CapRMA indicates provider support for remote memory access.
+	CapRMA = capi.CapRMA
+	// CapAtomic indicates provider support for atomic operations.
+	CapAtomic = capi.CapAtomic
+	// CapInject indicates provider support for inject send operations.
+	CapInject = capi.CapInject
+	// CapRemoteRead indicates provider support for remote memory reads.
+	CapRemoteRead = capi.CapRemoteRead
+	// CapRemoteWrite indicates provider support for remote memory writes.
 	CapRemoteWrite = capi.CapRemoteWrite
 )
 
@@ -34,15 +46,25 @@ const (
 type MRModeFlag uint64
 
 const (
-	MRModeLocal      MRModeFlag = MRModeFlag(capi.MRModeLocal)
-	MRModeRaw        MRModeFlag = MRModeFlag(capi.MRModeRaw)
-	MRModeVirtAddr   MRModeFlag = MRModeFlag(capi.MRModeVirtAddr)
-	MRModeAllocated  MRModeFlag = MRModeFlag(capi.MRModeAllocated)
-	MRModeProvKey    MRModeFlag = MRModeFlag(capi.MRModeProvKey)
-	MRModeMMUNotify  MRModeFlag = MRModeFlag(capi.MRModeMMUNotify)
-	MRModeRMAEvent   MRModeFlag = MRModeFlag(capi.MRModeRMAEvent)
-	MRModeEndpoint   MRModeFlag = MRModeFlag(capi.MRModeEndpoint)
-	MRModeHMEM       MRModeFlag = MRModeFlag(capi.MRModeHMEM)
+	// MRModeLocal indicates local memory registration is required.
+	MRModeLocal MRModeFlag = MRModeFlag(capi.MRModeLocal)
+	// MRModeRaw indicates raw memory registration is required.
+	MRModeRaw MRModeFlag = MRModeFlag(capi.MRModeRaw)
+	// MRModeVirtAddr indicates virtual address registration is required.
+	MRModeVirtAddr MRModeFlag = MRModeFlag(capi.MRModeVirtAddr)
+	// MRModeAllocated indicates provider-allocated memory registration is required.
+	MRModeAllocated MRModeFlag = MRModeFlag(capi.MRModeAllocated)
+	// MRModeProvKey indicates provider-generated memory keys are required.
+	MRModeProvKey MRModeFlag = MRModeFlag(capi.MRModeProvKey)
+	// MRModeMMUNotify indicates memory mapping changes must be reported.
+	MRModeMMUNotify MRModeFlag = MRModeFlag(capi.MRModeMMUNotify)
+	// MRModeRMAEvent indicates RMA operations must generate events.
+	MRModeRMAEvent MRModeFlag = MRModeFlag(capi.MRModeRMAEvent)
+	// MRModeEndpoint indicates registrations are tied to a specific endpoint.
+	MRModeEndpoint MRModeFlag = MRModeFlag(capi.MRModeEndpoint)
+	// MRModeHMEM indicates heterogeneous memory registration requirements.
+	MRModeHMEM MRModeFlag = MRModeFlag(capi.MRModeHMEM)
+	// MRModeCollective indicates collective registration semantics are required.
 	MRModeCollective MRModeFlag = MRModeFlag(capi.MRModeCollective)
 )
 
