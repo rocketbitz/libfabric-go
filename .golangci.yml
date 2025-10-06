@@ -1,22 +1,27 @@
+version: 2
 run:
   timeout: 5m
   tests: false
-  skip-dirs:
-    - vendor
 linters:
   enable:
+    - errcheck
     - govet
+    - revive
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        disabled: true
+formatters:
+  enable:
     - gofmt
     - goimports
-    - revive
-    - staticcheck
-linters-settings:
-  gofmt:
-    simplify: true
-  goimports:
-    local-prefixes: github.com/rocketbitz/libfabric-go
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/rocketbitz/libfabric-go
 issues:
-  exclude-use-default: false
-  max-same-issues: 3
   max-issues-per-linter: 0
-  max-issues-per-run: 0
+  max-same-issues: 3

@@ -73,31 +73,45 @@ type CQEvent struct {
 type CQFormat int
 
 const (
-	CQFormatUnspec  CQFormat = CQFormat(C.FI_CQ_FORMAT_UNSPEC)
+	// CQFormatUnspec lets libfabric choose the completion format.
+	CQFormatUnspec CQFormat = CQFormat(C.FI_CQ_FORMAT_UNSPEC)
+	// CQFormatContext reports completions containing context pointers only.
 	CQFormatContext CQFormat = CQFormat(C.FI_CQ_FORMAT_CONTEXT)
-	CQFormatMsg     CQFormat = CQFormat(C.FI_CQ_FORMAT_MSG)
-	CQFormatData    CQFormat = CQFormat(C.FI_CQ_FORMAT_DATA)
-	CQFormatTagged  CQFormat = CQFormat(C.FI_CQ_FORMAT_TAGGED)
+	// CQFormatMsg reports message completions with length information.
+	CQFormatMsg CQFormat = CQFormat(C.FI_CQ_FORMAT_MSG)
+	// CQFormatData reports completions containing provider data.
+	CQFormatData CQFormat = CQFormat(C.FI_CQ_FORMAT_DATA)
+	// CQFormatTagged reports completions containing tag metadata.
+	CQFormatTagged CQFormat = CQFormat(C.FI_CQ_FORMAT_TAGGED)
 )
 
 // WaitObj mirrors enum fi_wait_obj.
 type WaitObj int
 
 const (
-	WaitNone      WaitObj = WaitObj(C.FI_WAIT_NONE)
-	WaitUnspec    WaitObj = WaitObj(C.FI_WAIT_UNSPEC)
-	WaitObjSet    WaitObj = WaitObj(C.FI_WAIT_SET)
-	WaitFD        WaitObj = WaitObj(C.FI_WAIT_FD)
+	// WaitNone disables waiting primitives on the queue.
+	WaitNone WaitObj = WaitObj(C.FI_WAIT_NONE)
+	// WaitUnspec lets libfabric choose the wait object implementation.
+	WaitUnspec WaitObj = WaitObj(C.FI_WAIT_UNSPEC)
+	// WaitObjSet enables integration with wait sets.
+	WaitObjSet WaitObj = WaitObj(C.FI_WAIT_SET)
+	// WaitFD exposes a file descriptor suitable for polling.
+	WaitFD WaitObj = WaitObj(C.FI_WAIT_FD)
+	// WaitMutexCond exposes a mutex/condition wait pair.
 	WaitMutexCond WaitObj = WaitObj(C.FI_WAIT_MUTEX_COND)
-	WaitYield     WaitObj = WaitObj(C.FI_WAIT_YIELD)
-	WaitPollFD    WaitObj = WaitObj(C.FI_WAIT_POLLFD)
+	// WaitYield yields the processor while waiting.
+	WaitYield WaitObj = WaitObj(C.FI_WAIT_YIELD)
+	// WaitPollFD exposes a pollable file descriptor.
+	WaitPollFD WaitObj = WaitObj(C.FI_WAIT_POLLFD)
 )
 
 // CQWaitCond mirrors enum fi_cq_wait_cond.
 type CQWaitCond int
 
 const (
-	CQCondNone      CQWaitCond = CQWaitCond(C.FI_CQ_COND_NONE)
+	// CQCondNone applies no wait condition.
+	CQCondNone CQWaitCond = CQWaitCond(C.FI_CQ_COND_NONE)
+	// CQCondThreshold waits for a completion threshold.
 	CQCondThreshold CQWaitCond = CQWaitCond(C.FI_CQ_COND_THRESHOLD)
 )
 
@@ -120,7 +134,9 @@ type EQAttr struct {
 }
 
 const (
+	// BindSend binds send operations to the target resource.
 	BindSend = uint64(C.FI_SEND)
+	// BindRecv binds receive operations to the target resource.
 	BindRecv = uint64(C.FI_RECV)
 )
 
@@ -147,9 +163,12 @@ type EQError struct {
 type CMEventType uint32
 
 const (
-	CMEventConnReq   CMEventType = CMEventType(C.FI_CONNREQ)
+	// CMEventConnReq indicates a connection request is available.
+	CMEventConnReq CMEventType = CMEventType(C.FI_CONNREQ)
+	// CMEventConnected indicates a connection has been established.
 	CMEventConnected CMEventType = CMEventType(C.FI_CONNECTED)
-	CMEventShutdown  CMEventType = CMEventType(C.FI_SHUTDOWN)
+	// CMEventShutdown indicates the connection has been shut down.
+	CMEventShutdown CMEventType = CMEventType(C.FI_SHUTDOWN)
 )
 
 // CMEvent captures fi_eq_cm_entry data.

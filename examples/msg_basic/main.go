@@ -1,3 +1,4 @@
+// Package main demonstrates basic message send/receive operations with libfabric-go.
 package main
 
 import (
@@ -34,25 +35,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("open fabric: %v", err)
 	}
-	defer fabric.Close()
+	defer func() {
+		_ = fabric.Close()
+	}()
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
 		log.Fatalf("open domain: %v", err)
 	}
-	defer domain.Close()
+	defer func() {
+		_ = domain.Close()
+	}()
 
 	cq, err := domain.OpenCompletionQueue(nil)
 	if err != nil {
 		log.Fatalf("open completion queue: %v", err)
 	}
-	defer cq.Close()
+	defer func() {
+		_ = cq.Close()
+	}()
 
 	ep, err := desc.OpenEndpoint(domain)
 	if err != nil {
 		log.Fatalf("open endpoint: %v", err)
 	}
-	defer ep.Close()
+	defer func() {
+		_ = ep.Close()
+	}()
 
 	if err := ep.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
 		log.Fatalf("bind completion queue: %v", err)

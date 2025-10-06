@@ -1,3 +1,4 @@
+// Package main demonstrates basic libfabric RMA usage with libfabric-go.
 package main
 
 import (
@@ -108,33 +109,33 @@ func runRMAExample(desc fi.Descriptor) error {
 	if err != nil {
 		return fmt.Errorf("open fabric: %w", err)
 	}
-	defer fabric.Close()
+	defer func() { _ = fabric.Close() }()
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
 		return fmt.Errorf("open domain: %w", err)
 	}
-	defer domain.Close()
+	defer func() { _ = domain.Close() }()
 
 	av, err := domain.OpenAddressVector(nil)
 	if err != nil {
 		return fmt.Errorf("open address vector: %w", err)
 	}
-	defer av.Close()
+	defer func() { _ = av.Close() }()
 
 	initiator, initiatorCQ, err := openEndpoint(domain, desc, av, "initiator")
 	if err != nil {
 		return err
 	}
-	defer initiator.Close()
-	defer initiatorCQ.Close()
+	defer func() { _ = initiator.Close() }()
+	defer func() { _ = initiatorCQ.Close() }()
 
 	target, targetCQ, err := openEndpoint(domain, desc, av, "target")
 	if err != nil {
 		return err
 	}
-	defer target.Close()
-	defer targetCQ.Close()
+	defer func() { _ = target.Close() }()
+	defer func() { _ = targetCQ.Close() }()
 
 	addrTarget, err := target.RegisterAddress(av, 0)
 	if err != nil {
@@ -146,13 +147,13 @@ func runRMAExample(desc fi.Descriptor) error {
 	if err != nil {
 		return fmt.Errorf("register local memory: %w", err)
 	}
-	defer localMR.Close()
+	defer func() { _ = localMR.Close() }()
 
 	remoteMR, err := domain.RegisterMemory(make([]byte, len(writePayload)), fi.MRAccessLocal|fi.MRAccessRemoteRead|fi.MRAccessRemoteWrite)
 	if err != nil {
 		return fmt.Errorf("register remote memory: %w", err)
 	}
-	defer remoteMR.Close()
+	defer func() { _ = remoteMR.Close() }()
 
 	fmt.Println("posting RMA write...")
 	if err := initiator.WriteSync(&fi.RMARequest{
@@ -171,7 +172,7 @@ func runRMAExample(desc fi.Descriptor) error {
 	if err != nil {
 		return fmt.Errorf("register read staging region: %w", err)
 	}
-	defer readMR.Close()
+	defer func() { _ = readMR.Close() }()
 	readBacking := make([]byte, len(readPayload))
 
 	fmt.Println("posting RMA read...")
@@ -196,25 +197,25 @@ func openEndpoint(domain *fi.Domain, desc fi.Descriptor, av *fi.AddressVector, l
 
 	ep, err := desc.OpenEndpoint(domain)
 	if err != nil {
-		cq.Close()
+		_ = cq.Close()
 		return nil, nil, fmt.Errorf("%s: open endpoint: %w", label, err)
 	}
 
 	if err := ep.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
-		ep.Close()
-		cq.Close()
+		_ = ep.Close()
+		_ = cq.Close()
 		return nil, nil, fmt.Errorf("%s: bind completion queue: %w", label, err)
 	}
 
 	if err := ep.BindAddressVector(av, 0); err != nil {
-		ep.Close()
-		cq.Close()
+		_ = ep.Close()
+		_ = cq.Close()
 		return nil, nil, fmt.Errorf("%s: bind address vector: %w", label, err)
 	}
 
 	if err := ep.Enable(); err != nil {
-		ep.Close()
-		cq.Close()
+		_ = ep.Close()
+		_ = cq.Close()
 		return nil, nil, fmt.Errorf("%s: enable endpoint: %w", label, err)
 	}
 

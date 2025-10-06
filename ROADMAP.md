@@ -53,15 +53,12 @@
 - Follow-up: implement atomic verbs once a provider exposes them and expand descriptor-blob introspection when a backend requires it.
 
 ### Phase 6 – High-Level Go Abstractions (Optional Layer)
-- **In progress.** `client` package provides discovery, lifecycle management, MR pooling, async completions, source-aware `ReceiveFrom`, handler registration, telemetry hooks (`Logger`, `StructuredLogger`, `Tracer`, `MetricHook`, `Stats`), Prometheus / OpenTelemetry metrics adapters, and MSG listener/connect helpers built atop passive endpoints.
-- Remaining follow-ups: surface higher-level helpers (retry policies, backpressure, handler orchestration) and finalise RDM/datagram peer addressing ergonomics.
-- See `docs/PHASE6_CLIENT_PLAN.md` for a detailed plan and status.
+- **Complete.** `client` package provides discovery, lifecycle management, MR pooling, async completions, source-aware `ReceiveFrom`, handler registration, telemetry hooks (`Logger`, `StructuredLogger`, `Tracer`, `MetricHook`, `Stats`), built-in Prometheus / OpenTelemetry metrics adapters, and MSG listener/connect helpers built atop passive endpoints.
+- Follow-ups are tracked below (retry/backpressure helpers, RDM/datagram peer ergonomics) and will inform Phase 7/8 priorities.
 
 ### Phase 7 – Testing, QA, and CI
-- Unit test conversion utilities and error handling with table-driven tests.
-- Create integration tests that spin up local providers (e.g. sockets) to validate end-to-end messaging and RMA flows; gate them behind build tags when providers unavailable.
-- Add benchmarks (Go `testing.B`) for critical paths to track performance regressions.
-- Wire up CI matrix that installs libfabric (or uses container) and runs lint, unit tests, integration tests (provider permitting), and benchmarks (optionally).
+- **In progress.** CI now runs gofmt/lint (golangci-lint), race-enabled unit tests with coverage, and benchmark sweeps via CircleCI. Provider-aware client tests honour `LIBFABRIC_TEST_*` env knobs so sockets remains fast while additional providers (e.g., EFA) can be exercised where hardware is available. A new integration test harness (`go test -tags=integration ./integration/...`) executes the shipped examples end to end, and table-driven unit tests for conversion/error handling are kept green under the lint-first workflow.
+- Next: add provider-specific CI lanes (e.g., self-hosted runner for AWS EFA), capture and publish coverage/benchmark artifacts, and extend integration coverage beyond sockets (tagged, RMA, high-level client flows executed across processes).
 
 ### Phase 8 – Documentation & Examples
 - Generate GoDoc comments for all exported symbols; maintain package-level overview with usage notes and caveats.
@@ -75,7 +72,7 @@
 - [x] Phase 3: Queueing primitives (AV, CQ/EQ, wait sets) validated with tests.
 - [x] Phase 4: Messaging APIs functioning with integration coverage.
 - [x] Phase 5: Memory registration & RMA helpers implemented (atomic verbs pending provider support).
-- [ ] Phase 6: High-level Go abstractions (optional but planned) stabilized.
+- [x] Phase 6: High-level Go abstractions (optional but planned) stabilized.
 - [ ] Phase 7: CI pipeline green across supported providers.
 - [ ] Phase 8: Documentation and examples published.
 
@@ -86,3 +83,4 @@
 - Assess need for thread-safety guarantees or locking in Go wrappers beyond libfabric requirements.
 - Identify provider coverage for RMA atomic verbs and descriptor blob requirements so the Phase 5 follow-up work can be scheduled.
 - Define peer addressing patterns (RDM/datagram) and connection-management primitives for the high-level client layer.
+- Explore retry/backpressure and handler orchestration patterns to round out the high-level client ergonomics.

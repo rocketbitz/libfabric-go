@@ -116,32 +116,39 @@ var (
 	failureLabelKeys    = []string{labelEndpointType, labelProvider, labelNode, labelService, labelOperation}
 )
 
+// DispatcherStarted records that the dispatcher loop has started executing.
 func (p *PrometheusMetrics) DispatcherStarted(attrs map[string]string) {
 	p.dispatcherStarted.With(labels(attrs, dispatcherLabelKeys...)).Inc()
 }
 
+// DispatcherStopped records that the dispatcher loop has exited.
 func (p *PrometheusMetrics) DispatcherStopped(attrs map[string]string) {
 	p.dispatcherStopped.With(labels(attrs, dispatcherLabelKeys...)).Inc()
 }
 
+// DispatcherCQError counts completion queue errors observed by the dispatcher.
 func (p *PrometheusMetrics) DispatcherCQError(kind string, _ error, attrs map[string]string) {
 	labs := labels(attrs, cqErrorLabelKeys...)
 	labs[labelKind] = kind
 	p.dispatcherCQError.With(labs).Inc()
 }
 
+// SendCompleted records a successful send completion.
 func (p *PrometheusMetrics) SendCompleted(attrs map[string]string) {
 	p.sendCompleted.With(labels(attrs, completionLabelKeys...)).Inc()
 }
 
+// SendFailed records a failed send completion.
 func (p *PrometheusMetrics) SendFailed(_ error, attrs map[string]string) {
 	p.sendFailed.With(labels(attrs, failureLabelKeys...)).Inc()
 }
 
+// ReceiveCompleted records a successful receive completion.
 func (p *PrometheusMetrics) ReceiveCompleted(attrs map[string]string) {
 	p.receiveCompleted.With(labels(attrs, completionLabelKeys...)).Inc()
 }
 
+// ReceiveFailed records a failed receive completion.
 func (p *PrometheusMetrics) ReceiveFailed(_ error, attrs map[string]string) {
 	p.receiveFailed.With(labels(attrs, failureLabelKeys...)).Inc()
 }

@@ -87,8 +87,6 @@ func (c *CompletionContext) AddCleanup(fn func()) {
 	c.mu.Unlock()
 }
 
-// AttachBuffer ensures the provided C-managed buffer is freed when the
-// completion resolves or the context is released.
 // IsReleased reports whether the context has already been resolved or released.
 func (c *CompletionContext) IsReleased() bool {
 	return c.closed.Load()

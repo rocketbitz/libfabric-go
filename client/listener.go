@@ -72,38 +72,38 @@ func Listen(cfg ListenerConfig) (*Listener, error) {
 
 	domain, err := desc.OpenDomain(fabric)
 	if err != nil {
-		fabric.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open domain: %w", err)
 	}
 
 	eq, err := fabric.OpenEventQueue(nil)
 	if err != nil {
-		domain.Close()
-		fabric.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open event queue: %w", err)
 	}
 
 	pep, err := desc.OpenPassiveEndpoint(fabric)
 	if err != nil {
-		eq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = eq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open passive endpoint: %w", err)
 	}
 
 	if err := pep.BindEventQueue(eq, 0); err != nil {
-		pep.Close()
-		eq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = pep.Close()
+		_ = eq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("bind event queue: %w", err)
 	}
 
 	if err := pep.Listen(); err != nil {
-		pep.Close()
-		eq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = pep.Close()
+		_ = eq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("listen passive endpoint: %w", err)
 	}
 
@@ -205,47 +205,47 @@ func (l *Listener) handleConnReq(ctx context.Context, evt *fi.ConnectionEvent) (
 
 	cq, err := l.domain.OpenCompletionQueue(nil)
 	if err != nil {
-		endpoint.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("open completion queue: %w", err)
 	}
 
 	clientEQ, err := l.fabric.OpenEventQueue(nil)
 	if err != nil {
-		cq.Close()
-		endpoint.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("open event queue: %w", err)
 	}
 
 	if err := endpoint.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("bind completion queue: %w", err)
 	}
 	if err := endpoint.BindEventQueue(clientEQ, 0); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("bind event queue: %w", err)
 	}
 	if err := endpoint.Enable(); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("enable endpoint: %w", err)
 	}
 
 	if err := endpoint.Accept(evt.Data()); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, fmt.Errorf("accept: %w", err)
 	}
 
 	if err := waitForConnected(ctx, clientEQ); err != nil {
-		clientEQ.Close()
-		cq.Close()
-		endpoint.Close()
+		_ = clientEQ.Close()
+		_ = cq.Close()
+		_ = endpoint.Close()
 		return nil, err
 	}
 

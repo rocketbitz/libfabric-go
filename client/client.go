@@ -1,3 +1,4 @@
+// Package client exposes a high-level libfabric client abstraction layered on top of the fi primitives.
 package client
 
 import (
@@ -78,7 +79,9 @@ type errorHolder struct {
 }
 
 const (
+	// OperationSend identifies send operations tracked by OperationKind.
 	OperationSend OperationKind = iota
+	// OperationReceive identifies receive operations tracked by OperationKind.
 	OperationReceive
 )
 
@@ -534,7 +537,7 @@ func Dial(cfg Config) (*Client, error) {
 
 	domain, err := selected.OpenDomain(fabric)
 	if err != nil {
-		fabric.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open domain: %w", err)
 	}
 
@@ -544,32 +547,32 @@ func Dial(cfg Config) (*Client, error) {
 	}
 	cq, err := domain.OpenCompletionQueue(cqAttr)
 	if err != nil {
-		domain.Close()
-		fabric.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open completion queue: %w", err)
 	}
 
 	endpoint, err := selected.OpenEndpoint(domain)
 	if err != nil {
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("open endpoint: %w", err)
 	}
 
 	if err := endpoint.BindCompletionQueue(cq, fi.BindSend|fi.BindRecv); err != nil {
-		endpoint.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("bind completion queue: %w", err)
 	}
 
 	if err := endpoint.Enable(); err != nil {
-		endpoint.Close()
-		cq.Close()
-		domain.Close()
-		fabric.Close()
+		_ = endpoint.Close()
+		_ = cq.Close()
+		_ = domain.Close()
+		_ = fabric.Close()
 		return nil, fmt.Errorf("enable endpoint: %w", err)
 	}
 
@@ -579,36 +582,36 @@ func Dial(cfg Config) (*Client, error) {
 	if cfg.EndpointType == fi.EndpointTypeRDM {
 		av, err = domain.OpenAddressVector(&fi.AddressVectorAttr{Type: fi.AVTypeMap})
 		if err != nil {
-			endpoint.Close()
-			cq.Close()
-			domain.Close()
-			fabric.Close()
+			_ = endpoint.Close()
+			_ = cq.Close()
+			_ = domain.Close()
+			_ = fabric.Close()
 			return nil, fmt.Errorf("open address vector: %w", err)
 		}
 		if err := endpoint.BindAddressVector(av, 0); err != nil {
-			av.Close()
-			endpoint.Close()
-			cq.Close()
-			domain.Close()
-			fabric.Close()
+			_ = av.Close()
+			_ = endpoint.Close()
+			_ = cq.Close()
+			_ = domain.Close()
+			_ = fabric.Close()
 			return nil, fmt.Errorf("bind address vector: %w", err)
 		}
 		selfAddr, err = endpoint.RegisterAddress(av, 0)
 		if err != nil {
-			av.Close()
-			endpoint.Close()
-			cq.Close()
-			domain.Close()
-			fabric.Close()
+			_ = av.Close()
+			_ = endpoint.Close()
+			_ = cq.Close()
+			_ = domain.Close()
+			_ = fabric.Close()
 			return nil, fmt.Errorf("register endpoint address: %w", err)
 		}
 		selfRaw, err = endpoint.Name()
 		if err != nil {
-			av.Close()
-			endpoint.Close()
-			cq.Close()
-			domain.Close()
-			fabric.Close()
+			_ = av.Close()
+			_ = endpoint.Close()
+			_ = cq.Close()
+			_ = domain.Close()
+			_ = fabric.Close()
 			return nil, fmt.Errorf("query endpoint address: %w", err)
 		}
 	}
@@ -647,7 +650,7 @@ func Dial(cfg Config) (*Client, error) {
 	if av != nil && (cfg.Node != "" || cfg.Service != "") {
 		peerAddr, err := av.InsertService(cfg.Node, cfg.Service, 0)
 		if err != nil {
-			client.Close()
+			_ = client.Close()
 			return nil, fmt.Errorf("register peer service: %w", err)
 		}
 		client.peerAddr.Store(uint64(peerAddr))
@@ -680,7 +683,7 @@ func Dial(cfg Config) (*Client, error) {
 	if poolSize > 0 {
 		pool, err := fi.NewMRPool(domain, poolSize, access, poolCapacity)
 		if err != nil {
-			client.Close()
+			_ = client.Close()
 			return nil, fmt.Errorf("create MR pool: %w", err)
 		}
 		client.mrPool = pool

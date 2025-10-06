@@ -12,8 +12,11 @@ import (
 type MRAccessFlag uint64
 
 const (
-	MRAccessLocal       MRAccessFlag = MRAccessFlag(capi.MRAccessLocal)
-	MRAccessRemoteRead  MRAccessFlag = MRAccessFlag(capi.MRAccessRemoteRead)
+	// MRAccessLocal allows local CPU access to the registered memory.
+	MRAccessLocal MRAccessFlag = MRAccessFlag(capi.MRAccessLocal)
+	// MRAccessRemoteRead allows remote peers to issue read operations.
+	MRAccessRemoteRead MRAccessFlag = MRAccessFlag(capi.MRAccessRemoteRead)
+	// MRAccessRemoteWrite allows remote peers to issue write operations.
 	MRAccessRemoteWrite MRAccessFlag = MRAccessFlag(capi.MRAccessRemoteWrite)
 )
 

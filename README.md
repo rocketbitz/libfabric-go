@@ -6,10 +6,14 @@
 - Phases 0–4 are complete (baseline scaffolding, discovery, queueing, messaging).
 - Phase 5 (memory registration & RMA) is in progress; see [`ROADMAP.md`](ROADMAP.md)
   and [`docs/PHASE5_PLAN.md`](docs/PHASE5_PLAN.md) for current milestones.
-- Integration tests for tagged messaging and future RMA/RDM coverage are gated by
+- Integration tests for tagged messaging, RMA/RDM coverage, and high-level client flows are gated by
   environment variables (e.g., `LIBFABRIC_TEST_TAGGED=1`,
   `LIBFABRIC_TEST_DGRAM_PROVIDERS=sockets`,
-  `LIBFABRIC_TEST_RMA_PROVIDERS=<provider>`).
+  `LIBFABRIC_TEST_RMA_PROVIDERS=<provider>`,
+  `LIBFABRIC_TEST_CLIENT_RDM_PROVIDERS=sockets`,
+  `LIBFABRIC_TEST_CLIENT_RDM_HINTS=sockets:iface=lo0`,
+  `LIBFABRIC_TEST_CLIENT_MSG_PROVIDERS=sockets`,
+  `LIBFABRIC_TEST_CLIENT_MSG_HINTS=sockets:node=127.0.0.1`).
 - Discovery helpers now surface provider MR requirements and remote read/write
   capabilities so domains can enforce mandatory flags automatically.
 - `fi.MRPool` provides a reusable pool of registered buffers to reduce
@@ -58,6 +62,7 @@
 - Run `just check` before submitting changes.
 - Document provider assumptions and threading behavior in code comments and docs.
 - File issues for missing API coverage or provider-specific bugs so they can be prioritized on the roadmap.
+- Run the integration examples with `just integration` (requires `go test -tags=integration` and sockets-capable libfabric; override provider env vars such as `LIBFABRIC_TEST_CLIENT_RDM_PROVIDERS` when targeting other backends).
 
 ## License
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.

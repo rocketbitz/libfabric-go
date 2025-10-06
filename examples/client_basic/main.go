@@ -1,3 +1,4 @@
+// Package main demonstrates a minimal libfabric client send/receive example.
 package main
 
 import (
@@ -17,13 +18,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("dial sender: %v", err)
 	}
-	defer sender.Close()
+	defer func() {
+		_ = sender.Close()
+	}()
 
 	receiver, err := client.Dial(cfg)
 	if err != nil {
 		log.Fatalf("dial receiver: %v", err)
 	}
-	defer receiver.Close()
+	defer func() {
+		_ = receiver.Close()
+	}()
 
 	receiverAddr, err := receiver.LocalAddress()
 	if err != nil {

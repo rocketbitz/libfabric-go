@@ -19,7 +19,7 @@ type WaitAttr struct {
 	Flags   uint64
 }
 
-// WaitSet wraps a libfabric fid_wait handle.
+// WaitSetHandle wraps a libfabric fid_wait handle.
 type WaitSetHandle struct {
 	ptr *C.struct_fid_wait
 }

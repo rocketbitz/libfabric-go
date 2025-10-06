@@ -36,6 +36,7 @@ import "C"
 import "unsafe"
 
 const (
+	// FlagSource requests source address information during discovery.
 	FlagSource = uint64(C.FI_SOURCE)
 )
 
@@ -80,10 +81,14 @@ func (i *Info) ensureEPAttr() *C.struct_fi_ep_attr {
 type EndpointType int
 
 const (
+	// EndpointTypeUnspec allows libfabric to choose the endpoint type.
 	EndpointTypeUnspec EndpointType = EndpointType(C.FI_EP_UNSPEC)
-	EndpointTypeMsg    EndpointType = EndpointType(C.FI_EP_MSG)
-	EndpointTypeDgram  EndpointType = EndpointType(C.FI_EP_DGRAM)
-	EndpointTypeRDM    EndpointType = EndpointType(C.FI_EP_RDM)
+	// EndpointTypeMsg targets message-based endpoints.
+	EndpointTypeMsg EndpointType = EndpointType(C.FI_EP_MSG)
+	// EndpointTypeDgram targets unreliable datagram endpoints.
+	EndpointTypeDgram EndpointType = EndpointType(C.FI_EP_DGRAM)
+	// EndpointTypeRDM targets reliable datagram endpoints.
+	EndpointTypeRDM EndpointType = EndpointType(C.FI_EP_RDM)
 )
 
 func (e EndpointType) String() string {

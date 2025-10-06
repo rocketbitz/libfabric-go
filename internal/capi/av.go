@@ -17,9 +17,12 @@ import "C"
 type AVType int
 
 const (
+	// AVTypeUnspec lets libfabric choose the address vector implementation.
 	AVTypeUnspec AVType = AVType(C.FI_AV_UNSPEC)
-	AVTypeMap    AVType = AVType(C.FI_AV_MAP)
-	AVTypeTable  AVType = AVType(C.FI_AV_TABLE)
+	// AVTypeMap requests a map-based address vector.
+	AVTypeMap AVType = AVType(C.FI_AV_MAP)
+	// AVTypeTable requests a table-based address vector.
+	AVTypeTable AVType = AVType(C.FI_AV_TABLE)
 )
 
 // AVAttr describes address vector configuration.
@@ -42,6 +45,7 @@ type AV struct {
 type FIAddr uint64
 
 const (
+	// FIAddrUnspec represents an unspecified address vector entry.
 	FIAddrUnspec FIAddr = ^FIAddr(0)
 )
 

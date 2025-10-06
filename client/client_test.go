@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -21,7 +23,9 @@ import (
 )
 
 func TestClientSendReceiveAsync(t *testing.T) {
-	cli, err := Dial(Config{Timeout: 2 * time.Second})
+	provider := selectClientRDMProvider(t)
+	applyProviderEnv(t, provider)
+	cli, err := Dial(provider.apply(Config{Timeout: 2 * time.Second, EndpointType: fi.EndpointTypeRDM}))
 	if err != nil {
 		t.Skipf("Dial skipped: %v", err)
 	}
@@ -83,7 +87,9 @@ func TestClientSendReceiveAsync(t *testing.T) {
 }
 
 func TestClientSendReceiveSync(t *testing.T) {
-	cli, err := Dial(Config{Timeout: 2 * time.Second})
+	provider := selectClientRDMProvider(t)
+	applyProviderEnv(t, provider)
+	cli, err := Dial(provider.apply(Config{Timeout: 2 * time.Second, EndpointType: fi.EndpointTypeRDM}))
 	if err != nil {
 		t.Skipf("Dial skipped: %v", err)
 	}
@@ -127,9 +133,8 @@ func TestClientSendReceiveSync(t *testing.T) {
 }
 
 func TestClientRDMSendToPeer(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
-	sender, receiver, receiverPeerAddr, _ := setupPeerClients(t)
+	provider := selectClientRDMProvider(t)
+	sender, receiver, receiverPeerAddr, _ := setupPeerClients(t, provider)
 
 	payload := []byte("rdm-peer-test")
 	buf := make([]byte, len(payload))
@@ -199,9 +204,8 @@ func TestClientRDMSendToPeer(t *testing.T) {
 }
 
 func TestClientSendHandler(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
-	sender, receiver, _, _ := setupPeerClients(t)
+	provider := selectClientRDMProvider(t)
+	sender, receiver, _, _ := setupPeerClients(t, provider)
 
 	handlerCh := make(chan SendCompletion, 1)
 	unregister := sender.RegisterSendHandler(func(comp SendCompletion) {
@@ -244,9 +248,8 @@ func TestClientSendHandler(t *testing.T) {
 }
 
 func TestClientReceiveHandler(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
-	sender, receiver, _, senderPeerAddr := setupPeerClients(t)
+	provider := selectClientRDMProvider(t)
+	sender, receiver, _, senderPeerAddr := setupPeerClients(t, provider)
 
 	payload := []byte("handler-recv")
 	recvBuf := make([]byte, len(payload))
@@ -294,9 +297,8 @@ func TestClientReceiveHandler(t *testing.T) {
 }
 
 func TestClientReceiveFrom(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
-	sender, receiver, receiverPeerAddr, senderPeerAddr := setupPeerClients(t)
+	provider := selectClientRDMProvider(t)
+	sender, receiver, receiverPeerAddr, senderPeerAddr := setupPeerClients(t, provider)
 
 	payload := []byte("receive-from")
 
@@ -340,11 +342,19 @@ func TestClientReceiveFrom(t *testing.T) {
 }
 
 func TestClientMSGListenerConnect(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
+	provider := selectClientMSGProvider(t)
+	applyProviderEnv(t, provider)
+	node := provider.Node
+	if node == "" {
+		node = "127.0.0.1"
+	}
+	service := provider.Service
+	if service == "" {
+		service = freePort(t)
+	}
 
-	service := freePort(t)
-
-	listener, err := Listen(ListenerConfig{Provider: "sockets", Node: "127.0.0.1", Service: service})
+	listenerCfg := ListenerConfig{Provider: provider.Provider, Node: node, Service: service}
+	listener, err := Listen(listenerCfg)
 	if err != nil {
 		t.Skipf("Listen unavailable: %v", err)
 	}
@@ -365,7 +375,14 @@ func TestClientMSGListenerConnect(t *testing.T) {
 		serverCh <- conn
 	}()
 
-	clientConn, err := Connect(Config{Provider: "sockets", EndpointType: fi.EndpointTypeMsg, Node: "127.0.0.1", Service: service, Timeout: 5 * time.Second})
+	clientCfg := provider.apply(Config{EndpointType: fi.EndpointTypeMsg, Timeout: 5 * time.Second})
+	if clientCfg.Node == "" {
+		clientCfg.Node = node
+	}
+	if clientCfg.Service == "" {
+		clientCfg.Service = service
+	}
+	clientConn, err := Connect(clientCfg)
 	if err != nil {
 		t.Skipf("Connect skipped: %v", err)
 	}
@@ -432,9 +449,8 @@ func TestClientMSGListenerConnect(t *testing.T) {
 }
 
 func TestClientStats(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
-	sender, receiver, receiverPeerAddr, _ := setupPeerClients(t)
+	provider := selectClientRDMProvider(t)
+	sender, receiver, receiverPeerAddr, _ := setupPeerClients(t, provider)
 
 	payload := []byte("stats")
 	recvBuf := make([]byte, len(payload))
@@ -464,8 +480,8 @@ func TestClientStats(t *testing.T) {
 }
 
 func TestClientStructuredLoggingAndTracing(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
+	provider := selectClientRDMProvider(t)
+	applyProviderEnv(t, provider)
 	logger, observedLogs := newObservedLogger()
 	tp, recorder := newTestTracerProvider()
 	defer func() {
@@ -476,7 +492,7 @@ func TestClientStructuredLoggingAndTracing(t *testing.T) {
 	tracer := &otelTracerAdapter{tracer: tp.Tracer("client-structured-test")}
 
 	metrics := newMetricRecorder()
-	cfg := Config{
+	baseCfg := Config{
 		Timeout:          2 * time.Second,
 		EndpointType:     fi.EndpointTypeRDM,
 		Logger:           logger,
@@ -484,6 +500,7 @@ func TestClientStructuredLoggingAndTracing(t *testing.T) {
 		Tracer:           tracer,
 		Metrics:          metrics,
 	}
+	cfg := provider.apply(baseCfg)
 
 	sender, err := Dial(cfg)
 	if err != nil {
@@ -580,8 +597,8 @@ func TestClientStructuredLoggingAndTracing(t *testing.T) {
 }
 
 func TestClientDispatcherLogsCQError(t *testing.T) {
-	t.Setenv("FI_SOCKETS_IFACE", "lo0")
-
+	provider := selectClientRDMProvider(t)
+	applyProviderEnv(t, provider)
 	logger, observedLogs := newObservedLogger()
 	tp, recorder := newTestTracerProvider()
 	defer func() {
@@ -592,14 +609,14 @@ func TestClientDispatcherLogsCQError(t *testing.T) {
 	tracer := &otelTracerAdapter{tracer: tp.Tracer("client-cq-error-test")}
 
 	metrics := newMetricRecorder()
-	cfg := Config{
+	cfg := provider.apply(Config{
 		Timeout:          2 * time.Second,
 		EndpointType:     fi.EndpointTypeRDM,
 		Logger:           logger,
 		StructuredLogger: logger,
 		Tracer:           tracer,
 		Metrics:          metrics,
-	}
+	})
 
 	cli, err := Dial(cfg)
 	if err != nil {
@@ -653,9 +670,10 @@ func TestClientDispatcherLogsCQError(t *testing.T) {
 	}
 }
 
-func setupPeerClients(t *testing.T) (*Client, *Client, fi.Address, fi.Address) {
+func setupPeerClients(t *testing.T, provider clientProviderConfig) (*Client, *Client, fi.Address, fi.Address) {
 	t.Helper()
-	cfg := Config{Timeout: 2 * time.Second, EndpointType: fi.EndpointTypeRDM}
+	applyProviderEnv(t, provider)
+	cfg := provider.apply(Config{Timeout: 2 * time.Second, EndpointType: fi.EndpointTypeRDM})
 
 	sender, err := Dial(cfg)
 	if err != nil {
@@ -838,6 +856,165 @@ func toAttribute(attr TraceAttribute) attribute.KeyValue {
 	}
 }
 
+var (
+	clientRDMProvidersOnce  sync.Once
+	clientRDMProvidersCache []clientProviderConfig
+	clientMSGProvidersOnce  sync.Once
+	clientMSGProvidersCache []clientProviderConfig
+)
+
+func selectClientRDMProvider(t *testing.T) clientProviderConfig {
+	providers := cachedClientProviders(&clientRDMProvidersOnce, &clientRDMProvidersCache, "LIBFABRIC_TEST_CLIENT_RDM_PROVIDERS", "LIBFABRIC_TEST_CLIENT_RDM_HINTS", []clientProviderConfig{{Provider: "sockets"}})
+	if len(providers) == 0 {
+		t.Skip("client RDM providers not configured; set LIBFABRIC_TEST_CLIENT_RDM_PROVIDERS")
+	}
+	return providers[0]
+}
+
+func selectClientMSGProvider(t *testing.T) clientProviderConfig {
+	defaults := []clientProviderConfig{{Provider: "sockets", Node: "127.0.0.1"}}
+	providers := cachedClientProviders(&clientMSGProvidersOnce, &clientMSGProvidersCache, "LIBFABRIC_TEST_CLIENT_MSG_PROVIDERS", "LIBFABRIC_TEST_CLIENT_MSG_HINTS", defaults)
+	if len(providers) == 0 {
+		t.Skip("client MSG providers not configured; set LIBFABRIC_TEST_CLIENT_MSG_PROVIDERS")
+	}
+	return providers[0]
+}
+
+func cachedClientProviders(once *sync.Once, cache *[]clientProviderConfig, providersEnv, hintsEnv string, defaults []clientProviderConfig) []clientProviderConfig {
+	once.Do(func() {
+		configs := clientProviderConfigs(providersEnv, hintsEnv, defaults)
+		*cache = configs
+	})
+	return append([]clientProviderConfig(nil), *cache...)
+}
+
+func applyProviderEnv(t *testing.T, provider clientProviderConfig) {
+	if provider.Env != nil {
+		for key, value := range provider.Env {
+			if value == "" {
+				continue
+			}
+			t.Setenv(key, value)
+		}
+	}
+	if provider.Provider == "" || strings.EqualFold(provider.Provider, "sockets") {
+		iface := ""
+		if provider.Env != nil {
+			iface = provider.Env["FI_SOCKETS_IFACE"]
+		}
+		if iface == "" {
+			t.Setenv("FI_SOCKETS_IFACE", "lo0")
+		}
+	}
+}
+
+func clientProviderConfigs(providersEnv, hintsEnv string, defaults []clientProviderConfig) []clientProviderConfig {
+	raw := strings.TrimSpace(os.Getenv(providersEnv))
+	hints := parseClientProviderHints(os.Getenv(hintsEnv))
+	var configs []clientProviderConfig
+	if raw == "" {
+		configs = append(configs, defaults...)
+	} else {
+		for _, part := range strings.Split(raw, ",") {
+			name := strings.TrimSpace(part)
+			if name == "" {
+				continue
+			}
+			configs = append(configs, clientProviderConfig{Provider: name})
+		}
+		if len(configs) == 0 {
+			configs = append(configs, defaults...)
+		}
+	}
+	if len(configs) == 0 {
+		return nil
+	}
+	result := make([]clientProviderConfig, 0, len(configs))
+	for _, cfg := range configs {
+		lower := strings.ToLower(cfg.Provider)
+		cfg = applyClientProviderHints(cfg, hints[lower])
+		result = append(result, cfg)
+	}
+	return result
+}
+
+func parseClientProviderHints(raw string) map[string]map[string]string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	hints := make(map[string]map[string]string)
+	for _, entry := range strings.Split(raw, ";") {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		parts := strings.SplitN(entry, ":", 2)
+		provider := strings.ToLower(strings.TrimSpace(parts[0]))
+		if provider == "" {
+			continue
+		}
+		hint := hints[provider]
+		if hint == nil {
+			hint = make(map[string]string)
+			hints[provider] = hint
+		}
+		if len(parts) == 1 {
+			continue
+		}
+		for _, kv := range strings.Split(parts[1], ",") {
+			kv = strings.TrimSpace(kv)
+			if kv == "" {
+				continue
+			}
+			pair := strings.SplitN(kv, "=", 2)
+			key := strings.ToLower(strings.TrimSpace(pair[0]))
+			value := ""
+			if len(pair) == 2 {
+				value = strings.TrimSpace(pair[1])
+			}
+			hint[key] = value
+		}
+	}
+	if len(hints) == 0 {
+		return nil
+	}
+	return hints
+}
+
+func applyClientProviderHints(cfg clientProviderConfig, hint map[string]string) clientProviderConfig {
+	if len(hint) == 0 {
+		return cfg
+	}
+	if v := hint["provider"]; v != "" && cfg.Provider == "" {
+		cfg.Provider = v
+	}
+	if v := hint["node"]; v != "" {
+		cfg.Node = v
+	}
+	if v := hint["service"]; v != "" {
+		cfg.Service = v
+	}
+	if v := hint["iface"]; v != "" {
+		if cfg.Env == nil {
+			cfg.Env = make(map[string]string)
+		}
+		cfg.Env["FI_SOCKETS_IFACE"] = v
+	}
+	for key, value := range hint {
+		if strings.HasPrefix(key, "env.") {
+			name := strings.TrimPrefix(key, "env.")
+			if name == "" {
+				continue
+			}
+			if cfg.Env == nil {
+				cfg.Env = make(map[string]string)
+			}
+			cfg.Env[name] = value
+		}
+	}
+	return cfg
+}
+
 type metricRecorder struct {
 	mu                sync.Mutex
 	dispatcherStarted int
@@ -918,4 +1095,25 @@ type metricSnapshot struct {
 	SendFailed        int
 	ReceiveCompleted  int
 	ReceiveFailed     int
+}
+
+type clientProviderConfig struct {
+	Provider string
+	Node     string
+	Service  string
+	Env      map[string]string
+}
+
+func (p clientProviderConfig) apply(base Config) Config {
+	cfg := base
+	if p.Provider != "" {
+		cfg.Provider = p.Provider
+	}
+	if p.Node != "" {
+		cfg.Node = p.Node
+	}
+	if p.Service != "" {
+		cfg.Service = p.Service
+	}
+	return cfg
 }

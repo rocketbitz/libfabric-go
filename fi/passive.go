@@ -66,9 +66,12 @@ func (p *PassiveEndpoint) Name() ([]byte, error) {
 type ConnectionEventType = capi.CMEventType
 
 const (
-	ConnectionEventConnReq   = ConnectionEventType(capi.CMEventConnReq)
+	// ConnectionEventConnReq indicates a new connection request is pending.
+	ConnectionEventConnReq = ConnectionEventType(capi.CMEventConnReq)
+	// ConnectionEventConnected indicates a connection has been established.
 	ConnectionEventConnected = ConnectionEventType(capi.CMEventConnected)
-	ConnectionEventShutdown  = ConnectionEventType(capi.CMEventShutdown)
+	// ConnectionEventShutdown indicates the connection has been shut down.
+	ConnectionEventShutdown = ConnectionEventType(capi.CMEventShutdown)
 )
 
 // ConnectionEvent represents a connection-management event.
@@ -127,13 +130,6 @@ func (e *ConnectionEvent) OpenEndpoint(domain *Domain) (*Endpoint, error) {
 		return nil, errors.New("libfabric: nil connection event")
 	}
 	return domain.OpenEndpointWithInfo(e.cm.Info)
-}
-
-func (e *ConnectionEvent) infoEntry() capi.InfoEntry {
-	if e == nil || e.cm == nil {
-		return capi.InfoEntry{}
-	}
-	return e.cm.Info
 }
 
 // Free releases the fi_info associated with the event.

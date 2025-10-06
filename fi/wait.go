@@ -127,7 +127,7 @@ func waitForCompletion(ctx context.Context, cq *CompletionQueue, target *Complet
 
 // awaitContextWithEvent waits for the specified completion context and returns the completion event that resolved it.
 func awaitContextWithEvent(cq *CompletionQueue, target *CompletionContext, timeout time.Duration) (*CompletionEvent, error) {
-	return awaitContextWithEventContext(nil, cq, target, timeout)
+	return awaitContextWithEventContext(context.TODO(), cq, target, timeout)
 }
 
 func awaitContextWithEventContext(ctx context.Context, cq *CompletionQueue, target *CompletionContext, timeout time.Duration) (*CompletionEvent, error) {
@@ -135,7 +135,7 @@ func awaitContextWithEventContext(ctx context.Context, cq *CompletionQueue, targ
 }
 
 func waitForContext(cq *CompletionQueue, target *CompletionContext, timeout time.Duration) error {
-	_, err := waitForCompletion(nil, cq, target, timeout, false)
+	_, err := waitForCompletion(context.TODO(), cq, target, timeout, false)
 	return err
 }
 
