@@ -57,8 +57,7 @@
 - Follow-ups are tracked below (retry/backpressure helpers, RDM/datagram peer ergonomics) and will inform Phase 7/8 priorities.
 
 ### Phase 7 – Testing, QA, and CI
-- **In progress.** CI now runs gofmt/lint (golangci-lint), race-enabled unit tests with coverage, and benchmark sweeps via CircleCI. Provider-aware client tests honour `LIBFABRIC_TEST_*` env knobs so sockets remains fast while additional providers (e.g., EFA) can be exercised where hardware is available. A new integration test harness (`go test -tags=integration ./integration/...`) executes the shipped examples end to end, and table-driven unit tests for conversion/error handling are kept green under the lint-first workflow.
-- Next: add provider-specific CI lanes (e.g., self-hosted runner for AWS EFA), capture and publish coverage/benchmark artifacts, and extend integration coverage beyond sockets (tagged, RMA, high-level client flows executed across processes).
+- **Complete.** CI now runs gofmt/lint (golangci-lint), race-enabled unit tests with coverage, and benchmark sweeps via CircleCI. Provider-aware client tests honour `LIBFABRIC_TEST_*` env knobs so sockets remains fast while additional providers (e.g., EFA) can be exercised where hardware is available. The integration harness (`go test -tags=integration ./integration/...`) now includes a dedicated high-level client MSG end-to-end test (`integration/client_e2e_test.go`) alongside the example invocations, keeping table-driven unit tests and dispatcher coverage green under the lint-first workflow. Deferred enhancements (provider-specific lanes, published artifacts, broader provider coverage) are tracked under Outstanding Questions.
 
 ### Phase 8 – Documentation & Examples
 - Generate GoDoc comments for all exported symbols; maintain package-level overview with usage notes and caveats.
@@ -73,11 +72,13 @@
 - [x] Phase 4: Messaging APIs functioning with integration coverage.
 - [x] Phase 5: Memory registration & RMA helpers implemented (atomic verbs pending provider support).
 - [x] Phase 6: High-level Go abstractions (optional but planned) stabilized.
-- [ ] Phase 7: CI pipeline green across supported providers.
+- [x] Phase 7: CI pipeline green across supported providers.
 - [ ] Phase 8: Documentation and examples published.
 
 ## Outstanding Questions / Research
 - Determine which libfabric providers are mandatory for support and how to emulate them in CI.
+- Schedule provider-specific CI lanes (e.g., self-hosted AWS EFA) and automate coverage/benchmark artifact publishing once infrastructure is available.
+- Extend integration coverage beyond sockets (tagged, RMA, multi-process scenarios) once additional providers are available in CI.
 - Decide how strictly to mirror the C API naming vs. Go idioms (e.g. builder patterns, contexts).
 - Evaluate feasibility of code generation for structs/enums to reduce maintenance burden.
 - Assess need for thread-safety guarantees or locking in Go wrappers beyond libfabric requirements.

@@ -105,13 +105,14 @@ jobs:
           command: go mod download
       - save_go_cache
       - run:
-          name: Run example integration tests (opt-in)
+          name: Run integration suite (examples + e2e)
           command: |
-            if [ -n "${LIBFABRIC_TEST_EXAMPLES}" ]; then
-              go test -timeout=5m -tags=integration ./integration/...
-            else
-              echo "LIBFABRIC_TEST_EXAMPLES not set; skipping integration tests"
-            fi
+            export LIBFABRIC_TEST_EXAMPLES=1
+            export FI_SOCKETS_IFACE=${FI_SOCKETS_IFACE:-lo}
+            export FI_PROVIDER=${FI_PROVIDER:-sockets}
+            export LIBFABRIC_E2E_PROVIDER=${LIBFABRIC_E2E_PROVIDER:-sockets}
+            export LIBFABRIC_E2E_NODE=${LIBFABRIC_E2E_NODE:-127.0.0.1}
+            go test -timeout=5m -tags=integration ./integration/...
 
 workflows:
   version: 2
