@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	fi "github.com/rocketbitz/libfabric-go/fi"
+	"github.com/rocketbitz/libfabric-go/fi"
 )
 
 func main() {
