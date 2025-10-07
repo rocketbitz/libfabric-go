@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,10 +48,16 @@ func (s *ExampleSuite) runExample(relPath string, extraEnv []string) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "go", "run", "./"+relPath)
-	env := append(os.Environ(), "FI_SOCKETS_IFACE=lo0")
-	if provider := os.Getenv("LIBFABRIC_INTEGRATION_PROVIDER"); provider != "" {
-		env = append(env, "LIBFABRIC_EXAMPLE_PROVIDER="+provider)
+	loopback := "lo0"
+	if runtime.GOOS != "darwin" {
+		loopback = "lo"
 	}
+	provider := defaultExampleProvider()
+	env := append(os.Environ(),
+		"FI_SOCKETS_IFACE="+loopback,
+		"FI_PROVIDER="+provider,
+		"LIBFABRIC_EXAMPLE_PROVIDER="+provider,
+	)
 	if len(extraEnv) > 0 {
 		env = append(env, extraEnv...)
 	}
@@ -59,6 +67,16 @@ func (s *ExampleSuite) runExample(relPath string, extraEnv []string) {
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
 		s.FailNowf("example timeout", "example %s timed out:\n%s", relPath, string(output))
+	}
+	if err != nil {
+		text := string(output)
+		if strings.Contains(text, "no descriptor succeeded") ||
+			strings.Contains(text, "ensure the selected provider exposes RDM/RMA") ||
+			strings.Contains(text, "fi_enable: Operation not permitted") ||
+			strings.Contains(text, "libinfinipath.so") {
+			s.T().Skipf("example %s skipped: %s", relPath, strings.TrimSpace(text))
+			return
+		}
 	}
 	require.NoErrorf(s.T(), err, "example %s failed:\n%s", relPath, string(output))
 }

@@ -14,7 +14,15 @@ gocache := justfile_directory() + "/.gocache"
 
 @integration:
 	mkdir -p {{gocache}}
-	CGO_ENABLED=1 GOCACHE={{gocache}} go test -timeout=5m -tags=integration ./integration/...
+	iface="lo"
+	if [[ $(uname -s) == "Darwin" ]]; then iface="lo0"; fi
+	CGO_ENABLED=1 \
+	GOCACHE={{gocache}} \
+	FI_SOCKETS_IFACE=${FI_SOCKETS_IFACE:-$iface} \
+	FI_PROVIDER=${FI_PROVIDER:-sockets} \
+	LIBFABRIC_E2E_PROVIDER=${LIBFABRIC_E2E_PROVIDER:-sockets} \
+	LIBFABRIC_E2E_NODE=${LIBFABRIC_E2E_NODE:-127.0.0.1} \
+	go test -timeout=5m -tags=integration ./integration/...
 
 @fmt:
 	mkdir -p {{gocache}}
