@@ -50,7 +50,7 @@ import (
     "time"
 
     "github.com/rocketbitz/libfabric-go/client"
-    fi "github.com/rocketbitz/libfabric-go/fi"
+    "github.com/rocketbitz/libfabric-go/fi"
 )
 
 func main() {
